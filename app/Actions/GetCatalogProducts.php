@@ -3,22 +3,24 @@
 namespace App\Actions;
 
 use App\Models\Product;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Pipeline\Pipeline;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class GetCatalogProducts
 {
-    /**
-     * ดึงรายการสินค้าพร้อมการกรองและแบ่งหน้า
-     */
-    public function execute(?string $categorySlug = null): LengthAwarePaginator
+    public function execute(): LengthAwarePaginator
     {
-        return Product::with('category')
-            ->when($categorySlug, function ($query, $slug) {
-                $query->whereHas('category', fn($q) => $q->where('slug', $slug));
-            })
-            ->where('is_active', true)
-            ->latest()
+        return app(Pipeline::class)
+            ->send(Product::query()->with(['category'])) // เริ่มต้นด้วย Query Builder
+            ->through([
+                \App\QueryFilters\Search::class,
+                \App\QueryFilters\Category::class,
+                \App\QueryFilters\MaxHeight::class,
+                \App\QueryFilters\Material::class,
+                \App\QueryFilters\Drawers::class,
+            ])
+            ->thenReturn()
             ->paginate(12)
-            ->withQueryString();
+            ->withQueryString(); // รักษาค่า Filter ไว้เมื่อกดเปลี่ยนหน้า (Pagination)
     }
 }

@@ -7,13 +7,20 @@ import CategoryMobileFilter from './Partials/CategoryMobileFilter';
 import CategorySidebar from './Partials/CategorySidebar';
 import ProductCard from './Partials/ProductCard';
 import LoadMoreButton from './Partials/LoadMoreButton';
+import { useDebounce } from './hooks'; // แนะนำให้ใช้ Debounce เพื่อลดภาระ Server
 
 // Import Sub-Components
-
 interface Props {
     products: any;
     categories: any[];
 }
+
+const handleFilterChange = (key: string, value: string) => {
+    router.get(route('products.index'),
+        { ...filters, [key]: value },
+        { preserveState: true, replace: true } // ให้ผลลัพธ์เปลี่ยนทันทีแบบ SPA (UC-02)
+    );
+};
 
 export default function Index({ products: initialProducts, categories }: Props) {
     const { url } = usePage();
