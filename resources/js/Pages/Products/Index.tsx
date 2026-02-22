@@ -7,13 +7,8 @@ import CategoryMobileFilter from './Partials/CategoryMobileFilter';
 import CategorySidebar from './Partials/CategorySidebar';
 import ProductCard from './Partials/ProductCard';
 import LoadMoreButton from './Partials/LoadMoreButton';
-import { useDebounce } from './hooks'; // แนะนำให้ใช้ Debounce เพื่อลดภาระ Server
-
-// Import Sub-Components
-interface Props {
-    products: any;
-    categories: any[];
-}
+import { ProductsIndexProps } from '@/types';
+import { useDebounce } from '@/Hooks/useDebounce'; // แนะนำให้ใช้ Debounce เพื่อลดภาระ Server
 
 const handleFilterChange = (key: string, value: string) => {
     router.get(route('products.index'),
@@ -22,16 +17,20 @@ const handleFilterChange = (key: string, value: string) => {
     );
 };
 
-export default function Index({ products: initialProducts, categories }: Props) {
+export default function Index({ products: initialProducts, categories }: ProductsIndexProps) {
     const { url } = usePage();
     const [allProducts, setAllProducts] = useState(initialProducts.data);
     const [nextPageUrl, setNextPageUrl] = useState(initialProducts.next_page_url);
     const [isLoading, setIsLoading] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const debouncedSearchTerm = useDebounce(searchTerm, 500); // หน่วงเวลา 500ms
 
     useEffect(() => {
-        setAllProducts(initialProducts.data);
-        setNextPageUrl(initialProducts.next_page_url);
-    }, [initialProducts]);
+        if (debouncedSearchTerm) {
+            setAllProducts(initialProducts.data);
+            setNextPageUrl(initialProducts.next_page_url);
+        }
+    }, [initialProducts, debouncedSearchTerm]);
 
     const handleLoadMore = () => {
         if (nextPageUrl && !isLoading) {
