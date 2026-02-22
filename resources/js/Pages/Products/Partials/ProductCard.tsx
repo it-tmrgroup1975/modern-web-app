@@ -3,34 +3,49 @@ import { Card, CardContent, CardFooter } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
 import { Badge } from "@/Components/ui/badge";
 import { ArrowUpRight, Box, Tag } from "lucide-react";
-import { Link } from '@inertiajs/react'; // นำเข้า Link เพื่อรักษาความเป็น SPA และความเร็วในการเปลี่ยนหน้า
+import { Link } from '@inertiajs/react';
+// นำเข้า Tooltip Components จาก ShadCN UI
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/Components/ui/tooltip";
 
 /**
- * ProductCard Component
- * ออกแบบมาเพื่อแสดงสินค้าอุตสาหกรรมในรูปแบบ Modern & Premium
- * รองรับการคลิกทั้ง Card เพื่อไปยังหน้ารายละเอียดสินค้า (Show Page)
+ * กำหนด Interface เพื่อความปลอดภัยของข้อมูล (Strict Typing)
  */
-export default function ProductCard({ product }: { product: any }) {
-    // ใช้ slug ในการสร้าง URL ตามลอจิกของ ProductController
+interface ProductProps {
+    id: number;
+    name: string;
+    slug: string;
+    price: number | string;
+    stock: number;
+    image_url?: string;
+    category?: {
+        name: string;
+    };
+}
+
+export default function ProductCard({ product }: { product: ProductProps }) {
     const productUrl = route('products.show', product.slug);
 
     return (
         <Card className="group border-none shadow-[0_4px_20px_-10px_rgba(0,0,0,0.1)] hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.15)] transition-all duration-500 rounded-[2.5rem] overflow-hidden bg-white flex flex-col border border-slate-50">
 
-            {/* Image Section - หุ้มด้วย Link เพื่อ UX ที่ดีและรองรับ SEO */}
+            {/* Image Section */}
             <Link
                 href={productUrl}
                 className="block aspect-square bg-[#F8FAFC] relative overflow-hidden m-3 rounded-[2rem] cursor-pointer"
             >
                 <img
-                    // ใช้ URL รูปภาพจริง หรือ Placeholder ในกรณีที่ไม่มีรูป
-                    src={product.image_url || `https://placehold.co/600x600?text=${encodeURIComponent(product.name)}`}
+                    src={product.image_url ? `/storage/${product.image_url}` : `https://placehold.co/600x600?text=${encodeURIComponent(product.name)}`}
                     alt={product.name}
                     className="object-contain w-full h-full p-10 transition-transform duration-700 group-hover:scale-105"
+                    loading="lazy"
                 />
 
                 <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
-                    {/* แสดงป้ายสถานะสินค้ากรณีสต็อกต่ำ */}
                     {product.stock <= 5 && product.stock > 0 ? (
                         <Badge variant="destructive" className="backdrop-blur-md bg-red-500/80 border-none px-3 py-1 rounded-full text-[10px] font-bold shadow-sm">
                             Limited Stock
@@ -50,16 +65,25 @@ export default function ProductCard({ product }: { product: any }) {
                 <div className="flex items-center gap-1.5 mb-3">
                     <Box className="w-3 h-3 text-primary/60" />
                     <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
-                        {/* ป้องกัน Error ด้วย Optional Chaining และ Fallback Value */}
                         {product.category?.name || 'General Collection'}
                     </span>
                 </div>
 
-                <Link href={productUrl}>
-                    <h3 className="font-bold text-slate-800 text-xl tracking-tight leading-tight group-hover:text-primary transition-colors duration-300 line-clamp-1 cursor-pointer">
-                        {product.name}
-                    </h3>
-                </Link>
+                {/* Tooltip สำหรับชื่อสินค้า */}
+                <TooltipProvider delayDuration={300}>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Link href={productUrl} className="block">
+                                <h3 className="font-bold text-slate-800 text-xl tracking-tight leading-tight group-hover:text-purple-700 transition-colors duration-300 line-clamp-1 cursor-pointer">
+                                    {product.name}
+                                </h3>
+                            </Link>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-white text-slat-900 border-none rounded px-4 py-2 shadow-xl">
+                            <p className="text-xs font-medium">{product.name}</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
 
                 <div className="mt-5 flex items-center justify-between">
                     <div className="flex items-baseline gap-1">
@@ -79,9 +103,9 @@ export default function ProductCard({ product }: { product: any }) {
             {/* Footer Section */}
             <CardFooter className="px-7 pb-7 pt-0">
                 <Link href={productUrl} className="w-full">
-                    <Button className="w-full rounded-2xl py-6 text-sm font-bold bg-purple-900 hover:bg-purple-600 text-white shadow-none transition-all duration-300 flex gap-2 overflow-hidden">
+                    <Button className="w-full rounded-2xl py-6 text-sm font-bold bg-purple-900 hover:bg-purple-600 text-white shadow-none transition-all duration-300 flex gap-2 overflow-hidden group/btn">
                        <span>Specifications</span>
-                       <ArrowUpRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                       <ArrowUpRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5" />
                     </Button>
                 </Link>
             </CardFooter>
