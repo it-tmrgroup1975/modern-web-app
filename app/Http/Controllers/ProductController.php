@@ -16,15 +16,13 @@ class ProductController extends Controller
      * Display a listing of the resource.
      * ปรับปรุงการดึงข้อมูลเพื่อรองรับการใช้งาน Slug และ UI Optimization
      */
-    public function index(Request $request, GetCatalogProducts $getCatalogProducts): Response
+    public function index(Request $request, GetCatalogProducts $getCatalogProducts)
     {
-        // เรียกใช้ Action เพื่อดึงข้อมูลสินค้า
-        $products = $getCatalogProducts->execute($request->category);
-
         return Inertia::render('Products/Index', [
-            'products' => $products,
+            'products' => $getCatalogProducts->execute(),
             'categories' => Category::all(),
-            'filters' => $request->only(['category'])
+            // ส่ง filters กลับไป เพื่อให้ SearchFilter แสดงค่าเดิมที่ค้นหาอยู่
+            'filters' => $request->only(['category', 'search'])
         ]);
     }
 

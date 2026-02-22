@@ -1,17 +1,27 @@
 <?php
 // app/QueryFilters/Search.php
-
 namespace App\QueryFilters;
 
 use Closure;
+use Illuminate\Database\Eloquent\Builder;
 
 class Search
 {
-    public function handle($request, Closure $next)
+    public function handle(Builder $query, Closure $next)
     {
-        if (!request()->has('search')) {
-            return $next($request);
+        // รับค่า 'search' จาก Request
+        $search = request('search');
+
+        if (!$search) {
+            return $next($query);
         }
-        return $next($request)->where('name', 'like', '%' . request('search') . '%');
+
+        // ค้นหาจากชื่อสินค้า หรือรายละเอียดสินค้า
+        $query->where(function ($q) use ($search) {
+            $q->where('name', 'like', "%{$search}%")
+                ->orWhere('description', 'like', "%{$search}%");
+        });
+
+        return $next($query);
     }
 }

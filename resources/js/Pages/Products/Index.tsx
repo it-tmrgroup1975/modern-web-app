@@ -41,14 +41,21 @@ export default function Index({ products: initialProducts, categories, filters }
         setNextPageUrl(initialProducts.next_page_url);
     }, [initialProducts]);
 
-    const handleFilterChange = (key: string, value: string | number | null) => {
-        const newFilters = { ...filters, [key]: value };
-        if (!value) delete newFilters[key as keyof typeof filters];
-        router.get(route('products.index'), newFilters, {
-            preserveState: true,
-            replace: true,
-            only: ['products', 'filters'],
-        });
+    // const handleFilterChange = (key: string, value: string | number | null) => {
+    //     const newFilters = { ...filters, [key]: value };
+    //     if (!value) delete newFilters[key as keyof typeof filters];
+    //     router.get(route('products.index'), newFilters, {
+    //         preserveState: true,
+    //         replace: true,
+    //         only: ['products', 'filters'],
+    //     });
+    // };
+
+    const handleSearch = (value: string | null) => {
+        router.get(route('products.index'),
+            { ...filters, search: value }, // รวม filter เดิมกับคำค้นหาใหม่
+            { preserveState: true, replace: true }
+        );
     };
 
     const handleLoadMore = () => {
@@ -93,7 +100,7 @@ export default function Index({ products: initialProducts, categories, filters }
 
                         <SearchFilter
                             initialValue={filters.search || ''}
-                            onSearch={(value) => handleFilterChange('search', value)}
+                            onSearch={handleSearch}
                         />
                     </div>
 
