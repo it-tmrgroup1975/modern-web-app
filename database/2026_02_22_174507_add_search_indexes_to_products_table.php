@@ -9,6 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('products', function (Blueprint $table) {
+            $table->engine = 'InnoDB'; // ระบุ Engine ให้ชัดเจน
             // Index สำหรับการกรองพื้นฐาน
             $table->index('is_active');
 

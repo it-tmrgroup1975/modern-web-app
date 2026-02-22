@@ -20,6 +20,7 @@ return new class extends Migration
         });
 
         Schema::create('products', function (Blueprint $table) {
+            $table->engine = 'InnoDB'; // ระบุ Engine ให้ชัดเจน
             $table->id();
             $table->foreignId('category_id')->constrained();
             $table->string('name'); // เช่น ตู้ลิ้นชักพลาสติก รุ่น Modern-01
@@ -32,6 +33,8 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->timestamps();
             $table->softDeletes(); // ใช้ Soft Deletes เพื่อความปลอดภัยของข้อมูล
+            $table->index('is_active');
+            $table->fulltext(['name', 'description']);
         });
     }
 

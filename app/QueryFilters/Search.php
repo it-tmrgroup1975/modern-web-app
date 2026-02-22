@@ -9,17 +9,15 @@ class Search
 {
     public function handle(Builder $query, Closure $next)
     {
-        // ตรวจสอบว่ามีการส่งค่า search มาหรือไม่
-        if (!request()->has('search') || empty(request('search'))) {
+        $term = request('search');
+
+        // 1. ตรวจสอบว่ามีค่า search ส่งมาจริงๆ และไม่เป็นค่าว่าง
+        if (blank($term)) {
             return $next($query);
         }
 
-        $term = request('search');
-
-        // ใช้ LIKE เพื่อค้นหาคำบางส่วนจากชื่อและรายละเอียดสินค้า
-        return $next($query->where(function ($q) use ($term) {
-            $q->where('name', 'like', "%{$term}%")
-              ->orWhere('description', 'like', "%{$term}%");
-        }));
+        // 2. ใช้ Full-Text Search แทน LIKE
+        // หมายเหตุ: คอลัมน์ ['name', 'description'] ต้องทำ Full-Text Index ใน Migration ไว้แล้ว
+        return $next($query->whereFullText(['name', 'description'], $term));
     }
 }
