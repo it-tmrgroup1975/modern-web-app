@@ -17,7 +17,8 @@ class CategoryFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'name' => $this->faker->words(2, true), // สุ่มชื่อหมวดหมู่
+            'slug' => $this->faker->unique()->slug(), // สุ่ม slug
         ];
     }
 }

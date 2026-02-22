@@ -20,7 +20,13 @@ class GetCatalogProducts
                 \App\QueryFilters\Search::class,
             ])
             ->thenReturn()
-            ->latest()
+            // ตรวจสอบว่าถ้ามีการค้นหา ให้เรียงตามคะแนนความแม่นยำ
+            ->when(request('search'), function ($query) {
+                return $query->orderBy('relevance', 'desc');
+            }, function ($query) {
+                // ถ้าไม่มีการค้นหา ให้เรียงตามลำดับล่าสุด (Default เดิมของคุณ)
+                return $query->latest();
+            })
             ->paginate(12)
             ->withQueryString();
     }

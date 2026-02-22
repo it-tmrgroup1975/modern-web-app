@@ -11,13 +11,14 @@ class Search
     {
         $term = request('search');
 
-        // 1. ตรวจสอบว่ามีค่า search ส่งมาจริงๆ และไม่เป็นค่าว่าง
         if (blank($term)) {
             return $next($query);
         }
 
-        // 2. ใช้ Full-Text Search แทน LIKE
-        // หมายเหตุ: คอลัมน์ ['name', 'description'] ต้องทำ Full-Text Index ใน Migration ไว้แล้ว
-        return $next($query->whereFullText(['name', 'description'], $term));
+        // คำนวณคะแนนความแม่นยำและเก็บไว้ในชื่อ relevance
+        $query->selectRaw("MATCH(name, description) AGAINST(? IN NATURAL LANGUAGE MODE) AS relevance", [$term])
+            ->whereFullText(['name', 'description'], $term);
+
+        return $next($query);
     }
 }

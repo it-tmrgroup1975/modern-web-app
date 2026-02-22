@@ -119,7 +119,7 @@ export default function Index({ products: initialProducts, categories, filters }
                                         />
                                     </div>
                                     {/* ไม่ต้องส่งค่าที่เกี่ยวข้องกับ description หาก ProductCard มีการดึงไปแสดง */}
-                                    <ProductCard product={product} />
+                                    <ProductCard key={product.id} product={product} />
                                 </div>
                             ))}
                         </div>

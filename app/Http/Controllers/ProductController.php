@@ -18,10 +18,12 @@ class ProductController extends Controller
      */
     public function index(Request $request, GetCatalogProducts $getCatalogProducts)
     {
+        // โครงสร้าง Controller ยังคงสะอาดเหมือนเดิม
+        // เพราะ Business Logic ในการจัดการลำดับถูกย้ายไปที่ Action แล้ว
         return Inertia::render('Products/Index', [
             'products' => $getCatalogProducts->execute(),
             'categories' => Category::all(),
-            'filters' => $request->only(['category', 'search']), // ส่งค่า search กลับไป
+            'filters' => $request->only(['category', 'search']),
         ]);
     }
 

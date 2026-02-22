@@ -22,11 +22,11 @@ class ProductFactory extends Factory
     {
         $name = $this->faker->words(3, true);
         return [
-            'category_id' => Category::factory(),
-            'name' => $name,
-            'slug' => str($name)->slug(),
-            'description' => $this->faker->paragraph(),
-            'price' => $this->faker->randomFloat(2, 500, 5000),
+            'category_id' => \App\Models\Category::factory(),
+            'name' => $this->faker->word(),
+            'slug' => $this->faker->unique()->slug(),
+            'description' => $this->faker->sentence(),
+            'price' => $this->faker->randomFloat(2, 100, 5000),
             'attributes' => [
                 'material' => 'High-Grade Polypropylene',
                 'color' => $this->faker->safeColorName(),

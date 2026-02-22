@@ -34,7 +34,7 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes(); // ใช้ Soft Deletes เพื่อความปลอดภัยของข้อมูล
             $table->index('is_active');
-            $table->fulltext(['name', 'description']);
+            $table->fullText(['name', 'description'])->withParser('ngram');
         });
     }
 
