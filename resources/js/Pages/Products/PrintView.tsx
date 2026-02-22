@@ -4,7 +4,21 @@ import { Head } from '@inertiajs/react';
 import { Button } from '@/Components/ui/button';
 import { QRCodeSVG } from 'qrcode.react';
 
-export default function PrintView({ products }) {
+// 1. เพิ่ม Interface เพื่อแก้ไขข้อผิดพลาด TS Binding element 'products'
+interface Product {
+    id: number;
+    name: string;
+    slug: string;
+    image_url: string;
+    price: number;
+    [key: string]: any; // สำหรับรองรับข้อมูลอื่นๆ ที่อาจส่งมาจาก Backend
+}
+
+interface PrintViewProps {
+    products: Product[];
+}
+
+export default function PrintView({ products }: PrintViewProps) {
     useEffect(() => {
         setTimeout(() => window.print(), 500);
     }, []);
@@ -25,7 +39,7 @@ export default function PrintView({ products }) {
                         page-break-after: always;
                         height: 297mm;
                         width: 210mm;
-                        padding: 12mm; /* ปรับ Padding ให้สมดุล */
+                        padding: 10mm; /* ปรับ Padding ให้สมดุลเพื่อเพิ่มพื้นที่ */
                         display: flex;
                         flex-direction: column;
                         box-sizing: border-box;
@@ -36,13 +50,14 @@ export default function PrintView({ products }) {
             `}} />
 
             <div className="flex flex-col max-w-4xl mx-auto px-4">
-                {products.map((product) => (
+                {/* 2. ระบุ Type ให้กับ Parameter 'product' ในฟังก์ชัน map */}
+                {products.map((product: Product) => (
                     <div key={product.id} className="page-container relative">
                         {/* Thin Elegant Border System */}
                         <div className="flex-1 flex flex-col border-[0.5pt] border-slate-200 p-8 m-2 relative">
 
                             {/* Brand Header */}
-                            <div className="flex justify-between items-start mb-12">
+                            <div className="flex justify-between items-start mb-6"> {/* ลด Margin เพื่อเพิ่มพื้นที่รูป */}
                                 <div className="flex flex-col">
                                     <span className="text-2xl font-black tracking-[0.2em] text-slate-900">MODERN</span>
                                     <span className="text-[10px] font-bold tracking-[0.4em] text-slate-400 -mt-1">FURNITURE</span>
@@ -53,28 +68,28 @@ export default function PrintView({ products }) {
                                 </div>
                             </div>
 
-                            {/* Product Name - ปรับขนาดลงให้ดูแพง (Elegant Size) */}
-                            <div className="mb-8">
+                            {/* Product Name */}
+                            <div className="mb-4"> {/* ลด Margin เพื่อเพิ่มพื้นที่รูป */}
                                 <div className="h-1 w-12 bg-slate-900 mb-4" />
-                                <h2 className="text-5xl font-black uppercase tracking-tight text-slate-900 leading-[1.1] max-w-[80%]">
+                                <h2 className="text-3xl font-black uppercase tracking-tight text-slate-900 leading-[1.1] max-w-[80%]">
                                     {product.name}
                                 </h2>
                                 <p className="text-slate-400 text-sm mt-2 font-medium tracking-wide">Premium Product Collection</p>
                             </div>
 
-                            {/* Main Hero Image - ปรับ Container ให้สมดุล */}
-                            <div className="flex-1 flex items-center justify-center relative my-4">
+                            {/* Main Hero Image - ขยายให้ใหญ่ที่สุดด้วย flex-grow และ max-height */}
+                            <div className="flex-[5] flex items-center justify-center relative my-2 min-h-0">
                                 <div className="absolute inset-0 bg-[radial-gradient(circle,_#f8fafc_0%,_transparent_70%)] opacity-60" />
                                 <img
                                     src={`/storage/${product.image_url}`}
-                                    className="max-w-[75%] max-h-[110mm] object-contain drop-shadow-[0_25px_25px_rgba(0,0,0,0.1)]"
+                                    className="max-w-[95%] max-h-[175mm] object-contain drop-shadow-[0_40px_50px_rgba(0,0,0,0.12)]"
                                     alt={product.name}
                                 />
                             </div>
 
                             {/* Bottom Info Grid */}
-                            <div className="grid grid-cols-12 items-end mt-12 gap-6">
-                                {/* Price Section - ปรับ Font ให้ดู Modern และอ่านง่าย */}
+                            <div className="grid grid-cols-12 items-end mt-6 gap-6"> {/* ปรับ Margin-top ให้เหมาะสม */}
+                                {/* Price Section */}
                                 <div className="col-span-7 flex flex-col">
                                     <div className="flex items-center gap-2 mb-3">
                                         <div className="h-[1px] w-4 bg-red-600" />
@@ -82,7 +97,7 @@ export default function PrintView({ products }) {
                                     </div>
                                     <div className="flex items-baseline">
                                         <span className="text-3xl font-light text-slate-300 mr-2">฿</span>
-                                        <span className="text-8xl font-black text-slate-900 tracking-tighter italic">
+                                        <span className="text-5xl font-black text-slate-900 tracking-tighter italic">
                                             {product.price.toLocaleString()}
                                         </span>
                                         <span className="text-2xl font-bold text-slate-300 ml-1">.-</span>
@@ -111,7 +126,7 @@ export default function PrintView({ products }) {
                             </div>
 
                             {/* Subdued Footer */}
-                            <div className="mt-8 pt-6 border-t-[0.5pt] border-slate-100 flex justify-between items-center">
+                            <div className="mt-6 pt-6 border-t-[0.5pt] border-slate-100 flex justify-between items-center">
                                 <p className="text-[9px] font-bold text-slate-300 uppercase tracking-[0.3em]">
                                     Genuine Plastic Industrial Grade
                                 </p>
