@@ -21,8 +21,7 @@ class ProductController extends Controller
         return Inertia::render('Products/Index', [
             'products' => $getCatalogProducts->execute(),
             'categories' => Category::all(),
-            // ส่ง filters กลับไป เพื่อให้ SearchFilter แสดงค่าเดิมที่ค้นหาอยู่
-            'filters' => $request->only(['category', 'search'])
+            'filters' => $request->only(['category', 'search']), // ส่งค่า search กลับไป
         ]);
     }
 

@@ -12,13 +12,12 @@ class GetCatalogProducts
 {
     public function execute(): LengthAwarePaginator
     {
-        return app(Pipeline::class)
-            ->send(Product::query()->with('category'))
+        return app(\Illuminate\Pipeline\Pipeline::class)
+            ->send(\App\Models\Product::query()->with('category'))
             ->through([
-                // กรองเฉพาะสินค้าที่ใช้งานอยู่ (is_active = true)
-                fn ($query, $next) => $next($query->where('is_active', true)),
-                Category::class,
-                Search::class,
+                fn($query, $next) => $next($query->where('is_active', true)),
+                \App\QueryFilters\Category::class,
+                \App\QueryFilters\Search::class,
             ])
             ->thenReturn()
             ->latest()

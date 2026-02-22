@@ -1,5 +1,4 @@
 <?php
-// app/QueryFilters/Category.php
 
 namespace App\QueryFilters;
 
@@ -10,12 +9,12 @@ class Category
 {
     public function handle(Builder $query, Closure $next)
     {
-        $slug = request('category');
-
-        if (!$slug) {
+        if (!request()->has('category') || empty(request('category'))) {
             return $next($query);
         }
 
-        return $next($query->whereHas('category', fn($q) => $q->where('slug', $slug)));
+        return $next($query->whereHas('category', function ($q) {
+            $q->where('slug', request('category'));
+        }));
     }
 }

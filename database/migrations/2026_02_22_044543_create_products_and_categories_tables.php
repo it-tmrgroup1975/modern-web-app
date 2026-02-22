@@ -32,9 +32,6 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->timestamps();
             $table->softDeletes(); // ใช้ Soft Deletes เพื่อความปลอดภัยของข้อมูล
-            $table->index('is_active');
-            $table->fulltext(['name', 'description']);
-            $table->index('created_at');
         });
     }
 
