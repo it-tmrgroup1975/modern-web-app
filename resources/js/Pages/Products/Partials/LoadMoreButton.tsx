@@ -22,7 +22,7 @@ export default function LoadMoreButton({ nextPageUrl, isLoading, total, currentC
                 onClick={onLoadMore}
                 disabled={isLoading}
                 variant="outline"
-                className="w-full md:w-[280px] h-14 md:h-16 rounded-2xl border-2 border-primary/20 hover:bg-primary hover:text-white transition-all duration-300 group shadow-lg shadow-slate-200"
+                className="w-full md:w-[280px] h-14 md:h-16 rounded-2xl border-2 border-primary/20 hover:bg-purple-900 hover:text-white transition-all duration-300 group shadow-lg shadow-slate-200"
             >
                 {isLoading ? (
                     <Loader2 className="w-5 h-5 animate-spin mr-2" />

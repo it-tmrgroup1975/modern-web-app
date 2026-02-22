@@ -79,7 +79,7 @@ export default function ProductCard({ product }: { product: any }) {
             {/* Footer Section */}
             <CardFooter className="px-7 pb-7 pt-0">
                 <Link href={productUrl} className="w-full">
-                    <Button className="w-full rounded-2xl py-6 text-sm font-bold bg-slate-900 hover:bg-primary text-white shadow-none transition-all duration-300 flex gap-2 overflow-hidden">
+                    <Button className="w-full rounded-2xl py-6 text-sm font-bold bg-purple-900 hover:bg-purple-600 text-white shadow-none transition-all duration-300 flex gap-2 overflow-hidden">
                        <span>Specifications</span>
                        <ArrowUpRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                     </Button>
