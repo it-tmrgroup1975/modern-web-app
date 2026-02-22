@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\GetCatalogProducts;
+use App\Actions\GetProductDetail;
 use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Inertia\Response;
 
 class ProductController extends Controller
 {
@@ -13,24 +16,15 @@ class ProductController extends Controller
      * Display a listing of the resource.
      * ปรับปรุงการดึงข้อมูลเพื่อรองรับการใช้งาน Slug และ UI Optimization
      */
-    public function index(Request $request)
+    public function index(Request $request, GetCatalogProducts $getCatalogProducts): Response
     {
-        // ดึงข้อมูลสินค้าพร้อมหมวดหมู่ (Eager Loading) เพื่อป้องกัน N+1 Problem
-        // มั่นใจได้ว่าข้อมูล category จะถูกส่งไปยัง ProductCard.tsx ทุกใบ
-        $products = Product::with('category')
-            ->when($request->category, function ($query, $slug) {
-                // กรองสินค้าตาม slug ของหมวดหมู่ที่ได้รับจาก Request
-                $query->whereHas('category', fn($q) => $q->where('slug', $slug));
-            })
-            ->where('is_active', true) // ดึงเฉพาะสินค้าที่พร้อมจำหน่าย
-            ->latest() // เรียงตามสินค้าใหม่ล่าสุด
-            ->paginate(12) // ทำ Pagination 12 ชิ้นต่อหน้าตามมาตรฐาน
-            ->withQueryString(); // รักษาค่า Filter ใน URL เมื่อเปลี่ยนหน้า
+        // เรียกใช้ Action เพื่อดึงข้อมูลสินค้า
+        $products = $getCatalogProducts->execute($request->category);
 
         return Inertia::render('Products/Index', [
-            'products' => $products, // ส่งข้อมูลสินค้าที่มี field 'slug' อยู่ในตัว
-            'categories' => Category::all(), // ส่งหมวดหมู่ทั้งหมดสำหรับ Sidebar/Mobile Filter
-            'filters' => $request->only(['category']) // ส่งสถานะ Filter ปัจจุบันกลับไป
+            'products' => $products,
+            'categories' => Category::all(),
+            'filters' => $request->only(['category'])
         ]);
     }
 
@@ -54,25 +48,14 @@ class ProductController extends Controller
      * แสดงรายละเอียดสินค้าโดยใช้ Slug
      * ปรับปรุงให้รองรับ Eager Loading เพื่อใช้กับ UI Optimization
      */
-    public function show(string $slug)
+    public function show(string $slug, GetProductDetail $getProductDetail): Response
     {
-        // 1. ดึงข้อมูลสินค้าพร้อมความสัมพันธ์ (Category)
-        // เพื่อป้องกัน Error "undefined" ใน ProductCard หรือหน้า Show
-        $product = Product::with(['category'])
-            ->where('slug', $slug)
-            ->firstOrFail();
-
-        // 2. ดึงสินค้าที่เกี่ยวข้อง (Related Products) ในหมวดหมู่เดียวกัน
-        // เพื่อนำไปแสดงในส่วน Product Gallery ด้านล่าง (UI Optimization)
-        $relatedProducts = Product::with(['category'])
-            ->where('category_id', $product->category_id)
-            ->where('id', '!=', $product->id) // ไม่เอาตัวปัจจุบัน
-            ->limit(4)
-            ->get();
+        // เรียกใช้ Action เพื่อดึงข้อมูลสินค้าและสินค้าที่เกี่ยวข้อง
+        $data = $getProductDetail->execute($slug);
 
         return Inertia::render('Products/Show', [
-            'product' => $product,
-            'relatedProducts' => $relatedProducts,
+            'product' => $data['product'],
+            'relatedProducts' => $data['relatedProducts'],
         ]);
     }
 
