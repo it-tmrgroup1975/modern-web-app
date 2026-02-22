@@ -18,50 +18,28 @@ interface ProductProps {
     price: number | string;
     stock: number;
     image_url?: string;
-    category?: {
-        name: string;
-    };
+    category?: { name: string };
 }
 
 export default function ProductCard({ product }: { product: ProductProps }) {
-    // แก้ไขจุดที่ 1: ตรวจสอบความพร้อมของข้อมูลก่อนเรียกใช้ Ziggy route
-    // หากไม่มี slug ให้ส่งค่าว่างหรือ '#' เพื่อป้องกัน Error: 'product' parameter is required
+    // ป้องกัน Error: 'product' parameter is required
     const productUrl = product?.slug ? route('products.show', { product: product.slug }) : '#';
 
-    // แก้ไขจุดที่ 2: ป้องกันการ Render หากข้อมูลพื้นฐานไม่ครบ (ป้องกันหน้าขาว)
+    // ถ้าไม่มีข้อมูลสินค้าเลย ไม่ต้องแสดงผล Component นี้
     if (!product) return null;
 
     return (
         <Card className="group border-none shadow-[0_4px_20px_-10px_rgba(0,0,0,0.1)] hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.15)] transition-all duration-500 rounded-[2.5rem] overflow-hidden bg-white flex flex-col border border-slate-50">
-
             {/* Image Section */}
-            <Link
-                href={productUrl}
-                className="block aspect-square bg-[#F8FAFC] relative overflow-hidden m-3 rounded-[2rem] cursor-pointer"
-            >
+            <Link href={productUrl} className="block aspect-square bg-[#F8FAFC] relative overflow-hidden m-3 rounded-[2rem] cursor-pointer">
                 <img
                     src={product.image_url ? `/storage/${product.image_url}` : `https://placehold.co/600x600?text=${encodeURIComponent(product.name || 'Product')}`}
-                    alt={product.name}
+                    alt={product.name || 'Product Image'}
                     className="object-contain w-full h-full p-10 transition-transform duration-700 group-hover:scale-105"
                     loading="lazy"
                 />
-
-                <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
-                    {product.stock <= 5 && product.stock > 0 ? (
-                        <Badge variant="destructive" className="backdrop-blur-md bg-red-500/80 border-none px-3 py-1 rounded-full text-[10px] font-bold shadow-sm">
-                            Limited Stock
-                        </Badge>
-                    ) : (
-                        <div />
-                    )}
-
-                    <div className="bg-white/80 backdrop-blur-md p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 shadow-sm">
-                        <ArrowUpRight className="w-4 h-4 text-slate-600" />
-                    </div>
-                </div>
             </Link>
 
-            {/* Content Section */}
             <CardContent className="px-7 pt-2 pb-6 flex-grow">
                 <div className="flex items-center gap-1.5 mb-3">
                     <Box className="w-3 h-3 text-primary/60" />
@@ -74,13 +52,13 @@ export default function ProductCard({ product }: { product: ProductProps }) {
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Link href={productUrl} className="block">
-                                <h3 className="font-bold text-slate-800 text-xl tracking-tight leading-tight group-hover:text-purple-700 transition-colors duration-300 line-clamp-1 cursor-pointer">
-                                    {product.name}
+                                <h3 className="font-bold text-slate-800 text-xl tracking-tight leading-tight group-hover:text-purple-700 transition-colors duration-300 line-clamp-1">
+                                    {product.name || 'Untitled Product'}
                                 </h3>
                             </Link>
                         </TooltipTrigger>
-                        <TooltipContent className="bg-white text-slat-900 border-none rounded px-4 py-2 shadow-xl">
-                            <p className="text-xs font-medium">{product.name}</p>
+                        <TooltipContent className="bg-white text-slate-900 border-none rounded px-4 py-2 shadow-xl">
+                            <p className="text-xs font-medium">{product.name || 'Untitled Product'}</p>
                         </TooltipContent>
                     </Tooltip>
                 </TooltipProvider>
@@ -92,15 +70,9 @@ export default function ProductCard({ product }: { product: ProductProps }) {
                             {Number(product.price || 0).toLocaleString()}
                         </span>
                     </div>
-
-                    <div className="flex items-center gap-1 text-slate-300">
-                        <Tag className="w-3 h-3" />
-                        <span className="text-[10px] font-bold uppercase">Standard</span>
-                    </div>
                 </div>
             </CardContent>
 
-            {/* Footer Section */}
             <CardFooter className="px-7 pb-7 pt-0">
                 <Link href={productUrl} className="w-full">
                     <Button className="w-full rounded-2xl py-6 text-sm font-bold bg-purple-900 hover:bg-purple-600 text-white shadow-none transition-all duration-300 flex gap-2 overflow-hidden group/btn">

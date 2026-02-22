@@ -15,10 +15,12 @@ class Search
             return $next($query);
         }
 
-        // คำนวณคะแนนความแม่นยำและเก็บไว้ในชื่อ relevance
-        $query->selectRaw("MATCH(name, description) AGAINST(? IN NATURAL LANGUAGE MODE) AS relevance", [$term])
-            ->whereFullText(['name', 'description'], $term);
-
-        return $next($query);
+        // แก้ไข: เพิ่ม select('*') เพื่อให้ได้ข้อมูล name, price, slug กลับมาด้วย
+        // และใช้ whereFullText สำหรับการทำ Index Search
+        return $next(
+            $query->select('*')
+                ->selectRaw("MATCH(name, description) AGAINST(? IN NATURAL LANGUAGE MODE) AS relevance", [$term])
+                ->whereFullText(['name', 'description'], $term)
+        );
     }
 }
