@@ -25,6 +25,9 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
+Route::post('/products/print-labels', [ProductController::class, 'printLabels'])
+    ->name('products.print-labels');
+
 // สร้าง Route สำหรับ Catalog สินค้า (Public Access)
 Route::resource('products', ProductController::class)->only(['index', 'show']);
 

@@ -28,6 +28,22 @@ class ProductController extends Controller
         ]);
     }
 
+    public function printLabels(\Illuminate\Http\Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:products,id',
+        ]);
+
+        $products = \App\Models\Product::whereIn('id', $validated['ids'])
+            ->with('category')
+            ->get();
+
+        return inertia('Products/PrintView', [
+            'products' => $products
+        ]);
+    }
+
     /**
      * Show the form for creating a new resource.
      */

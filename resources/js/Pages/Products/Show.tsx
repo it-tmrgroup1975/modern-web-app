@@ -40,7 +40,7 @@ export default function Show({ product, relatedProducts }: Props) {
                     <section className="space-y-4">
                         <div className="aspect-square bg-slate-50 rounded-[3rem] overflow-hidden flex items-center justify-center p-12 border border-slate-100">
                             <img
-                                src={product.image_url || `https://via.placeholder.com/800x800?text=${product.name}`}
+                                src={`/storage/${product.image_url}` || `https://via.placeholder.com/800x800?text=${product.name}`}
                                 alt={product.name}
                                 className="object-contain w-full h-full transform hover:scale-105 transition-transform duration-700"
                             />
@@ -48,7 +48,12 @@ export default function Show({ product, relatedProducts }: Props) {
                         {/* Image Thumbnails (ถ้ามีหลายรูปในอนาคต) */}
                         <div className="grid grid-cols-4 gap-4">
                             {[1,2,3,4].map((i) => (
-                                <div key={i} className="aspect-square bg-slate-50 rounded-2xl border border-slate-100 opacity-50 hover:opacity-100 cursor-pointer transition-opacity" />
+                                // <div key={i} className="aspect-square bg-slate-50 rounded-2xl border border-slate-100 opacity-50 hover:opacity-100 cursor-pointer transition-opacity" />
+                                <img
+                                src={`/storage/${product.image_url}` || `https://via.placeholder.com/800x800?text=${product.name}`}
+                                alt={product.name}
+                                className="object-contain w-full h-full transform hover:scale-105 transition-transform duration-700"
+                            />
                             ))}
                         </div>
                     </section>

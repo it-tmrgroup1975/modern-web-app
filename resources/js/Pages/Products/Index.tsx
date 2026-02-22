@@ -1,41 +1,49 @@
 import React, { useState, useEffect } from 'react';
 import { Head, usePage } from '@inertiajs/react';
-import { Filter } from "lucide-react";
+import { Filter, Printer } from "lucide-react"; // เพิ่ม Printer icon
 import { Button } from "@/Components/ui/button";
 import { router } from '@inertiajs/react';
 import CategoryMobileFilter from './Partials/CategoryMobileFilter';
 import CategorySidebar from './Partials/CategorySidebar';
 import ProductCard from './Partials/ProductCard';
 import LoadMoreButton from './Partials/LoadMoreButton';
-import SearchFilter from './Partials/SearchFilter'; // นำเข้า Component ใหม่
+import SearchFilter from './Partials/SearchFilter';
 import { ProductsIndexProps } from '@/types';
 import { useDebounce } from '@/Hooks/useDebounce';
+import { Checkbox } from "@/Components/ui/checkbox"; // นำเข้า Checkbox สำหรับเลือกสินค้า
 
 export default function Index({ products: initialProducts, categories, filters }: ProductsIndexProps) {
     const { url } = usePage();
     const [allProducts, setAllProducts] = useState(initialProducts.data);
-
-    // แก้ไข Type Warning: ยอมรับ string หรือ null
     const [nextPageUrl, setNextPageUrl] = useState<string | null>(initialProducts.next_page_url);
-
     const [isLoading, setIsLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState(filters.search || '');
     const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
+    // --- ส่วนที่เพิ่มใหม่: State สำหรับจัดการการเลือกสินค้า ---
+    const [selectedIds, setSelectedIds] = useState<number[]>([]);
+
+    const toggleSelect = (id: number) => {
+        setSelectedIds(prev =>
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        );
+    };
+
+    const handlePrintSelected = () => {
+        if (selectedIds.length === 0) return;
+        // ส่งข้อมูลไปยังหน้า Print Preview (ต้องสร้าง Route และ Page รองรับ)
+        router.post(route('products.print-labels'), { ids: selectedIds });
+    };
+    // --------------------------------------------------
+
     useEffect(() => {
-        // อัปเดต State เมื่อข้อมูลจาก Server เปลี่ยนแปลง (เช่น หลังจากการ Filter)
         setAllProducts(initialProducts.data);
         setNextPageUrl(initialProducts.next_page_url);
     }, [initialProducts]);
 
     const handleFilterChange = (key: string, value: string | number | null) => {
-        const newFilters = {
-            ...filters,
-            [key]: value
-        };
-
+        const newFilters = { ...filters, [key]: value };
         if (!value) delete newFilters[key as keyof typeof filters];
-
         router.get(route('products.index'), newFilters, {
             preserveState: true,
             replace: true,
@@ -65,18 +73,29 @@ export default function Index({ products: initialProducts, categories, filters }
             <Head title="Premium Industrial Catalog | Modern Furniture" />
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                {/* Header Section พร้อม SearchFilter */}
                 <header className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                     <div>
                         <h1 className="text-4xl font-black text-slate-900 tracking-tighter">Our Collection</h1>
                         <p className="text-slate-500 mt-2 font-medium">เฟอร์นิเจอร์พลาสติกมาตรฐานสากล ทนทาน และดีไซน์ทันสมัย</p>
                     </div>
 
-                    {/* การใช้งาน SearchFilter Component */}
-                    <SearchFilter
-                        initialValue={filters.search || ''}
-                        onSearch={(value) => handleFilterChange('search', value)}
-                    />
+                    <div className="flex items-center gap-4 w-full md:w-auto">
+                        {/* ปุ่มพิมพ์ Price Point แสดงเมื่อมีการเลือกสินค้า */}
+                        {selectedIds.length > 0 && (
+                            <Button
+                                onClick={handlePrintSelected}
+                                className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl animate-in fade-in slide-in-from-right-4"
+                            >
+                                <Printer className="w-4 h-4 mr-2" />
+                                พิมพ์ป้ายราคา ({selectedIds.length})
+                            </Button>
+                        )}
+
+                        <SearchFilter
+                            initialValue={filters.search || ''}
+                            onSearch={(value) => handleFilterChange('search', value)}
+                        />
+                    </div>
 
                     <div className="hidden lg:block text-sm text-slate-400 font-bold bg-white px-5 py-3 rounded-2xl shadow-[0_2px_10px_-4px_rgba(0,0,0,0.1)] border border-slate-100">
                         Showing <span className="text-slate-900 font-black">{allProducts.length}</span> of <span className="text-slate-900 font-black">{initialProducts.total}</span> products
@@ -94,7 +113,17 @@ export default function Index({ products: initialProducts, categories, filters }
                     <main className="flex-1 flex flex-col gap-12">
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                             {allProducts.map((product: any) => (
-                                <ProductCard key={product.id} product={product} />
+                                <div key={product.id} className="relative group">
+                                    <div className="absolute top-4 left-4 z-10">
+                                        <Checkbox
+                                            checked={selectedIds.includes(product.id)}
+                                            onCheckedChange={() => toggleSelect(product.id)}
+                                            className="w-6 h-6 border-2 border-white bg-white/80 data-[state=checked]:bg-blue-600 shadow-lg rounded-md"
+                                        />
+                                    </div>
+                                    {/* ไม่ต้องส่งค่าที่เกี่ยวข้องกับ description หาก ProductCard มีการดึงไปแสดง */}
+                                    <ProductCard product={product} />
+                                </div>
                             ))}
                         </div>
 
