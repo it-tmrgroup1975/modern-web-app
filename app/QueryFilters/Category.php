@@ -8,15 +8,14 @@ use Illuminate\Database\Eloquent\Builder;
 
 class Category
 {
-    public function handle($request, Closure $next)
+    public function handle(Builder $query, Closure $next)
     {
-        // ถ้าไม่มีการส่งค่า category มา ให้ข้ามไปขั้นตอนถัดไปใน Pipeline
-        if (!request()->filled('category')) {
-            return $next($request);
+        $slug = request('category');
+
+        if (!$slug) {
+            return $next($query);
         }
 
-        return $next($request)->whereHas('category', function (Builder $query) {
-            $query->where('slug', request('category'));
-        });
+        return $next($query->whereHas('category', fn($q) => $q->where('slug', $slug)));
     }
 }
