@@ -51,15 +51,14 @@ class ProductController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $slug)
+    public function show(Product $product)
     {
-        // ค้นหาสินค้าจาก Slug พร้อมโหลดข้อมูลหมวดหมู่ (Eager Loading)
-        $product = Product::with('category')
-            ->where('slug', $slug)
-            ->firstOrFail();
+        // ต้องมั่นใจว่าโหลด relation 'category' มาด้วย
+        $product->load('category');
 
-        // ดึงสินค้าที่เกี่ยวข้อง (ในหมวดหมู่เดียวกัน) เพื่อเพิ่มโอกาสการขาย (Cross-selling)
-        $relatedProducts = Product::where('category_id', $product->category_id)
+        // สำหรับ Related Products ก็ต้องโหลด category เช่นกัน
+        $relatedProducts = Product::with('category')
+            ->where('category_id', $product->category_id)
             ->where('id', '!=', $product->id)
             ->limit(4)
             ->get();
