@@ -26,10 +26,13 @@ class AdminProductController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(GetCatalogProducts $getCatalogProducts)
+    public function index(Request $request, GetCatalogProducts $getCatalogProducts)
     {
         return Inertia::render('Admin/Products/Index', [
             'products' => $getCatalogProducts->execute(),
+            'categories' => Category::all(),
+            // ส่งค่า filters กลับไป โดยใช้ default เป็น array เปล่าถ้าไม่มีข้อมูล
+            'filters' => $request->only(['search', 'category']) ?: new \stdClass(),
             'flash' => [
                 'success' => session('success'),
             ],
