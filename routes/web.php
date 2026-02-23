@@ -1,10 +1,16 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminProductController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+
+Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::resource('products', AdminProductController::class);
+    Route::post('products/import', [AdminProductController::class, 'import'])->name('products.import');
+});
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -36,4 +42,4 @@ Route::get('/', function () {
     return redirect()->route('products.index');
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

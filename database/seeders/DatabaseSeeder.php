@@ -15,6 +15,11 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->call([
+            AdminUserSeeder::class,
+            // ... Seeder อื่นๆ เช่น CategorySeeder หรือ ProductSeeder
+        ]);
+
         $categories = ['Chairs', 'Tables', 'Storage Boxes', 'Drawers', 'Lockers'];
 
         foreach ($categories as $cat) {
