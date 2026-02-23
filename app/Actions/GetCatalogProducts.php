@@ -12,26 +12,24 @@ class GetCatalogProducts
     /**
      * Execute the action to get filtered and paginated products.
      * * @return LengthAwarePaginator
+     * * @param bool $onlyActive กำหนดว่าจะกรองเฉพาะสินค้าที่ Active หรือไม่ (Default: true)
      */
-    public function execute(): LengthAwarePaginator
+    public function execute(bool $onlyActive = true): LengthAwarePaginator
     {
         return app(Pipeline::class)
             ->send(Product::query()->with('category'))
             ->through([
-                // กรองเฉพาะสินค้าที่เปิดใช้งาน (สามารถแยกเป็น Active::class ได้ในอนาคต)
-                fn($query, $next) => $next($query->where('is_active', true)),
+                // แก้ไข: กรอง is_active เฉพาะเมื่อ $onlyActive เป็น true เท่านั้น
+                fn($query, $next) => $onlyActive
+                    ? $next($query->where('is_active', true))
+                    : $next($query),
 
-                // Pipeline Filters สำหรับการค้นหาและหมวดหมู่
                 Category::class,
                 Search::class,
             ])
             ->thenReturn()
-            ->when(request()->filled('search'), 
-                // หากมีการค้นหา ให้เรียงตามคะแนนความเกี่ยวข้อง (Relevance Score)
-                // ซึ่งถูกคำนวณและ orderBy มาจากใน Search Filter แล้ว
-                fn($query) => $query,
-
-                // หากไม่มีการค้นหา ให้เรียงตามรายการล่าสุด
+            ->when(
+                !request()->filled('search'),
                 fn($query) => $query->latest()
             )
             ->paginate(12)

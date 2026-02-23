@@ -10,7 +10,6 @@ import ProductForm from './Partials/ProductForm';
 export default function Create({ auth, categories }: any) {
     return (
         <AuthenticatedLayout
-            user={auth.user}
             header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">เพิ่มสินค้าใหม่</h2>}
         >
             <Head title="เพิ่มสินค้าใหม่" />

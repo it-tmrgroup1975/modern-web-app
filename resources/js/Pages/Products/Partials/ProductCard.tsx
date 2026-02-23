@@ -27,7 +27,7 @@ export default function ProductCard({ product }: { product: ProductProps }) {
             {/* Image Section - เน้นความกว้างและสะอาด */}
             <Link href={productUrl} className="relative block aspect-[4/5] overflow-hidden rounded-[2rem] bg-[#F1F5F9] transition-all duration-500 group-hover:shadow-2xl group-hover:shadow-slate-200/50">
                 <img
-                    src={product.image_url ? `/storage/${product.image_url}` : `https://placehold.co/600x750?text=${encodeURIComponent(product.name || 'Product')}`}
+                    src={product.image_url ? product.image_url : `https://placehold.co/600x750?text=${encodeURIComponent(product.name || 'Product')}`}
                     alt={product.name}
                     className="object-contain w-full h-full p-2 transition-transform duration-1000 group-hover:scale-110"
                     loading="lazy"

@@ -41,7 +41,7 @@ export default function Index({ auth, products, categories, filters = {} }: any)
     };
 
     return (
-        <AuthenticatedLayout user={auth.user}>
+        <AuthenticatedLayout >
             <Head title="คลังสินค้า - Modern Furniture" />
 
             <div className="py-12 px-4 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-700">
@@ -117,7 +117,7 @@ export default function Index({ auth, products, categories, filters = {} }: any)
                                                     <div className="w-12 h-12 rounded-2xl bg-slate-100 flex-shrink-0 overflow-hidden border border-slate-100">
                                                         <img
                                                             /* แก้ไขจุดนี้: เรียกใช้ URL โดยตรงเนื่องจาก Controller ใส่ /storage/ มาให้แล้ว */
-                                                            src={`/storage/${product.image_url}` || `https://placehold.co/100?text=${product.name[0]}`}
+                                                            src={product.image_url || `https://placehold.co/100?text=${product.name[0]}`}
                                                             className="w-full h-full object-contain p-1"
                                                             alt={product.name}
                                                         />

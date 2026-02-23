@@ -86,7 +86,7 @@ export default function Index({ products: initialProducts, categories, filters }
                     <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
                         {/* เครื่องมือจัดการ Selection */}
                         <div className="flex items-center gap-2 mr-2">
-                            <Button
+                            {/* <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={toggleSelectAllInPage}
@@ -98,7 +98,7 @@ export default function Index({ products: initialProducts, categories, filters }
                                     <Square className="w-3 h-3 mr-2" />
                                 )}
                                 Select All
-                            </Button>
+                            </Button> */}
 
                             {selectedIds.length > 0 && (
                                 <Button
@@ -106,15 +106,21 @@ export default function Index({ products: initialProducts, categories, filters }
                                     className="bg-purple-900 hover:bg-purple-800 text-white font-bold rounded-xl shadow-lg shadow-purple-200 animate-in zoom-in-95"
                                 >
                                     <Printer className="w-4 h-4 mr-2" />
-                                    Print Labels ({selectedIds.length})
+                                    พิมพ์ ({selectedIds.length})
                                 </Button>
                             )}
                         </div>
+
+                        {/* ส่ง Categories ไปยัง Filter พร้อมระบบป้องกัน Error value เป็นสตริงว่าง */}
+                        <CategoryMobileFilter
+                            categories={categories.filter((c: any) => c.slug)}
+                        />
 
                         <SearchFilter
                             initialValue={filters.search || ''}
                             onSearch={handleSearch}
                         />
+
                     </div>
                 </header>
 
@@ -122,10 +128,6 @@ export default function Index({ products: initialProducts, categories, filters }
                     {/* Sidebar Filters */}
                     <aside className="w-full md:w-72 shrink-0">
                         <div className="md:sticky md:top-24 space-y-8 animate-in fade-in duration-1000">
-                            {/* ส่ง Categories ไปยัง Filter พร้อมระบบป้องกัน Error value เป็นสตริงว่าง */}
-                            <CategoryMobileFilter
-                                categories={categories.filter((c: any) => c.slug)}
-                            />
                             <CategorySidebar
                                 categories={categories.filter((c: any) => c.slug)}
                                 url={url}

@@ -10,7 +10,6 @@ import ProductForm from './Partials/ProductForm';
 export default function Edit({ auth, product, categories }: any) {
     return (
         <AuthenticatedLayout
-            user={auth.user}
             header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">แก้ไขสินค้า: {product.name}</h2>}
         >
             <Head title={`แก้ไข - ${product.name}`} />

@@ -29,7 +29,8 @@ class AdminProductController extends Controller
     public function index(Request $request, GetCatalogProducts $getCatalogProducts)
     {
         return Inertia::render('Admin/Products/Index', [
-            'products' => $getCatalogProducts->execute(),
+            // ส่ง false เพื่อบอกว่า "ไม่ต้องกรองเฉพาะสินค้าที่ active"
+            'products' => $getCatalogProducts->execute(false),
             'categories' => Category::all(),
             // ส่งค่า filters กลับไป โดยใช้ default เป็น array เปล่าถ้าไม่มีข้อมูล
             'filters' => $request->only(['search', 'category']) ?: new \stdClass(),
@@ -59,7 +60,7 @@ class AdminProductController extends Controller
         // จัดการอัปโหลดรูปภาพ
         if ($request->hasFile('image')) {
             $path = $request->file('image')->store('products', 'public');
-            $data['image_url'] = $path;
+            $data['image_url'] = '/storage/' . $path;
         }
 
         $this->productService->create($data);
@@ -95,7 +96,7 @@ class AdminProductController extends Controller
             }
 
             $path = $request->file('image')->store('products', 'public');
-            $data['image_url'] = $path;
+            $data['image_url'] = '/storage/' . $path;
         }
 
         $this->productService->update($product, $data);
