@@ -50,7 +50,7 @@ export default function ProductForm({ product, categories }: any) {
                     <div className="relative w-40 h-40 border-2 border-dashed rounded-lg flex items-center justify-center overflow-hidden bg-gray-50">
                         {previewUrl ? (
                             <>
-                                <img src={previewUrl} className="object-cover w-full h-full" alt="Preview" />
+                                <img src={`/storage/${previewUrl}`} className="object-cover w-full h-full" alt="Preview" />
                                 <button
                                     type="button"
                                     onClick={() => { setPreviewUrl(null); setData('image', null); }}
@@ -81,7 +81,7 @@ export default function ProductForm({ product, categories }: any) {
                     )}
                 </div>
 
-                
+
 
                 <Button type="submit" disabled={processing} className="w-full">
                     {processing ? 'กำลังบันทึก...' : (product ? 'อัปเดตสินค้า' : 'เพิ่มสินค้า')}

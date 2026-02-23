@@ -56,7 +56,7 @@ class AdminProductController extends Controller
         // จัดการอัปโหลดรูปภาพ
         if ($request->hasFile('image')) {
             $path = $request->file('image')->store('products', 'public');
-            $data['image_url'] = '/storage/' . $path;
+            $data['image_url'] = $path;
         }
 
         $this->productService->create($data);
@@ -92,7 +92,7 @@ class AdminProductController extends Controller
             }
 
             $path = $request->file('image')->store('products', 'public');
-            $data['image_url'] = '/storage/' . $path;
+            $data['image_url'] = $path;
         }
 
         $this->productService->update($product, $data);
