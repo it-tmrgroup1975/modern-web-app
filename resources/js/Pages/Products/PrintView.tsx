@@ -1,8 +1,9 @@
 // resources/js/Pages/Products/PrintView.tsx
 import React, { useEffect } from 'react';
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { Button } from '@/Components/ui/button';
 import { QRCodeSVG } from 'qrcode.react';
+import { X } from 'lucide-react';
 
 // 1. เพิ่ม Interface เพื่อแก้ไขข้อผิดพลาด TS Binding element 'products'
 interface Product {
@@ -27,7 +28,8 @@ export default function PrintView({ products }: PrintViewProps) {
         <div className="print-container p-0 bg-white min-h-screen">
             <Head title="พิมพ์ป้ายราคา - Modern Furniture" />
 
-            <style dangerouslySetInnerHTML={{ __html: `
+            <style dangerouslySetInnerHTML={{
+                __html: `
                 @media print {
                     @page {
                         size: A4 portrait;
@@ -110,7 +112,7 @@ export default function PrintView({ products }: PrintViewProps) {
                                         <div className="text-right flex flex-col justify-center h-full">
                                             <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest mb-1">Scan for Info</p>
                                             <p className="text-[8px] font-medium text-slate-400 leading-tight uppercase tracking-tighter">
-                                                Product Specifications<br/>& Direct Support
+                                                Product Specifications<br />& Direct Support
                                             </p>
                                         </div>
                                         <div className="p-2 border-[0.5pt] border-slate-100 rounded-lg shadow-sm bg-white">
@@ -139,9 +141,17 @@ export default function PrintView({ products }: PrintViewProps) {
                 ))}
             </div>
 
-            <Button className="no-print fixed bottom-10 right-10 shadow-[0_15px_40px_rgba(0,0,0,0.2)] rounded-full px-10 py-7 text-sm font-black bg-slate-900 hover:bg-black text-white border-none transition-all active:scale-95 tracking-[0.15em]" onClick={() => window.print()}>
-                PRINT LABELS
-            </Button>
+            <div className="fixed top-4 right-4 print:hidden flex gap-2">
+                {/* ปุ่ม X สำหรับปิดและกลับหน้าหลัก */}
+                <Link href="/">
+                    <Button variant="destructive" size="icon" className="rounded-full">
+                        <X className="w-4 h-4" />
+                    </Button>
+                </Link>
+                <Button className="no-print fixed bottom-10 right-10 shadow-[0_15px_40px_rgba(0,0,0,0.2)] rounded-full px-10 py-7 text-sm font-black bg-slate-900 hover:bg-black text-white border-none transition-all active:scale-95 tracking-[0.15em]" onClick={() => window.print()}>
+                    PRINT LABELS
+                </Button>
+            </div>
         </div>
     );
 }

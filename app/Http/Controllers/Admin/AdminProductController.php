@@ -11,6 +11,7 @@ use App\Actions\GetCatalogProducts; // ใช้ Action เดิมที่เ
 use Inertia\Inertia;
 use Illuminate\Http\Request;
 use App\Imports\ProductsImport;
+use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 
 class AdminProductController extends Controller
@@ -50,10 +51,18 @@ class AdminProductController extends Controller
      */
     public function store(ProductRequest $request)
     {
-        $this->productService->create($request->validated());
+        $data = $request->validated();
+
+        // จัดการอัปโหลดรูปภาพ
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('products', 'public');
+            $data['image_url'] = '/storage/' . $path;
+        }
+
+        $this->productService->create($data);
 
         return redirect()->route('admin.products.index')
-            ->with('success', 'Product created successfully.');
+            ->with('success', 'เพิ่มสินค้าและอัปโหลดรูปภาพเรียบร้อยแล้ว');
     }
 
     /**
@@ -72,10 +81,24 @@ class AdminProductController extends Controller
      */
     public function update(ProductRequest $request, Product $product)
     {
-        $this->productService->update($product, $request->validated());
+        $data = $request->validated();
+
+        // จัดการเปลี่ยนรูปภาพใหม่
+        if ($request->hasFile('image')) {
+            // ลบรูปภาพเดิมถ้ามี
+            if ($product->image_url) {
+                $oldPath = str_replace('/storage/', '', $product->image_url);
+                Storage::disk('public')->delete($oldPath);
+            }
+
+            $path = $request->file('image')->store('products', 'public');
+            $data['image_url'] = '/storage/' . $path;
+        }
+
+        $this->productService->update($product, $data);
 
         return redirect()->route('admin.products.index')
-            ->with('success', 'Product updated successfully.');
+            ->with('success', 'แก้ไขข้อมูลสินค้าและรูปภาพเรียบร้อยแล้ว');
     }
 
     /**
@@ -83,10 +106,16 @@ class AdminProductController extends Controller
      */
     public function destroy(Product $product)
     {
+        // ลบรูปภาพออกจาก Storage เมื่อลบสินค้า
+        if ($product->image_url) {
+            $path = str_replace('/storage/', '', $product->image_url);
+            Storage::disk('public')->delete($path);
+        }
+
         $product->delete();
 
         return redirect()->route('admin.products.index')
-            ->with('success', 'Product deleted successfully.');
+            ->with('success', 'ลบสินค้าและไฟล์รูปภาพเรียบร้อยแล้ว');
     }
 
     /**
