@@ -29,7 +29,7 @@ export default function ProductCard({ product }: { product: ProductProps }) {
                 <img
                     src={product.image_url ? `/storage/${product.image_url}` : `https://placehold.co/600x750?text=${encodeURIComponent(product.name || 'Product')}`}
                     alt={product.name}
-                    className="object-contain w-full h-full p-4 transition-transform duration-1000 group-hover:scale-110"
+                    className="object-contain w-full h-full p-2 transition-transform duration-1000 group-hover:scale-110"
                     loading="lazy"
                 />
 

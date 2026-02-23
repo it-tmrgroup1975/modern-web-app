@@ -14,14 +14,12 @@ import {
     Plus, Pencil, Trash2, FileUp, Search,
     Filter, ChevronLeft, ChevronRight, Package
 } from 'lucide-react';
-import { useDebounce } from '@/Hooks/useDebounce'; // อ้างอิงจากไฟล์ที่มีในโปรเจกต์
+import { useDebounce } from '@/Hooks/useDebounce';
 
-export default function Index({ auth, products, categories, filters = {} }: any) { // กำหนด default value ให้ filters
-    // ใช้ Optional Chaining หรือ nullish coalescing เพื่อความปลอดภัย
+export default function Index({ auth, products, categories, filters = {} }: any) {
     const [search, setSearch] = useState(filters?.search ?? '');
     const debouncedSearch = useDebounce(search, 500);
 
-    // ระบบค้นหาอัตโนมัติเมื่อพิมพ์ (Real-time Search)
     useEffect(() => {
         router.get(route('admin.products.index'),
             { search: debouncedSearch, category: filters.category },
@@ -29,7 +27,6 @@ export default function Index({ auth, products, categories, filters = {} }: any)
         );
     }, [debouncedSearch]);
 
-    // ระบบกรองตามหมวดหมู่
     const handleCategoryChange = (value: string) => {
         router.get(route('admin.products.index'),
             { search: search, category: value === 'all' ? '' : value },
@@ -37,7 +34,6 @@ export default function Index({ auth, products, categories, filters = {} }: any)
         );
     };
 
-    // ระบบลบสินค้าพร้อมการยืนยัน
     const handleDelete = (id: number) => {
         if (confirm('คุณแน่ใจหรือไม่ที่จะลบสินค้านี้? ข้อมูลจะหายไปถาวร')) {
             router.delete(route('admin.products.destroy', id));
@@ -49,7 +45,6 @@ export default function Index({ auth, products, categories, filters = {} }: any)
             <Head title="คลังสินค้า - Modern Furniture" />
 
             <div className="py-12 px-4 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-700">
-                {/* Header Section */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <h1 className="text-3xl font-black text-slate-900 tracking-tight">Product Management</h1>
@@ -67,7 +62,6 @@ export default function Index({ auth, products, categories, filters = {} }: any)
                     </div>
                 </div>
 
-                {/* Filters Bar */}
                 <Card className="border-none shadow-sm rounded-[2rem] bg-white/50 backdrop-blur">
                     <CardContent className="p-4 flex flex-col md:flex-row gap-4">
                         <div className="relative flex-grow">
@@ -87,8 +81,13 @@ export default function Index({ auth, products, categories, filters = {} }: any)
                                 </SelectTrigger>
                                 <SelectContent className="rounded-2xl border-none shadow-xl">
                                     <SelectItem value="all">หมวดหมู่ทั้งหมด</SelectItem>
+                                    {/* แก้ไขจุดนี้: ตรวจสอบ slug ว่าไม่ใช่ค่าว่างก่อน Render */}
                                     {categories.map((cat: any) => (
-                                        <SelectItem key={cat.id} value={cat.slug}>{cat.name}</SelectItem>
+                                        cat.slug && (
+                                            <SelectItem key={cat.id} value={cat.slug}>
+                                                {cat.name}
+                                            </SelectItem>
+                                        )
                                     ))}
                                 </SelectContent>
                             </Select>
@@ -96,7 +95,6 @@ export default function Index({ auth, products, categories, filters = {} }: any)
                     </CardContent>
                 </Card>
 
-                {/* Products Table */}
                 <Card className="border-none shadow-sm rounded-[2.5rem] overflow-hidden bg-white">
                     <CardContent className="p-0">
                         <div className="overflow-x-auto">
@@ -116,21 +114,23 @@ export default function Index({ auth, products, categories, filters = {} }: any)
                                         <tr key={product.id} className="group hover:bg-slate-50/30 transition-colors">
                                             <td className="p-6">
                                                 <div className="flex items-center gap-4">
-                                                    <div className="w-12 h-12 rounded-2xl bg-slate-100 flex-shrink-0 overflow-hidden">
+                                                    <div className="w-12 h-12 rounded-2xl bg-slate-100 flex-shrink-0 overflow-hidden border border-slate-100">
                                                         <img
+                                                            /* แก้ไขจุดนี้: เรียกใช้ URL โดยตรงเนื่องจาก Controller ใส่ /storage/ มาให้แล้ว */
                                                             src={`/storage/${product.image_url}` || `https://placehold.co/100?text=${product.name[0]}`}
-                                                            className="w-full h-full object-cover"
+                                                            className="w-full h-full object-contain p-1"
+                                                            alt={product.name}
                                                         />
                                                     </div>
                                                     <div>
                                                         <p className="font-bold text-slate-800 line-clamp-1">{product.name}</p>
-                                                        <p className="text-xs text-slate-400 italic">SKU: {product.slug.toUpperCase()}</p>
+                                                        <p className="text-xs text-slate-400 italic uppercase">SKU: {product.sku}</p>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td className="p-6 text-slate-600 font-medium">
                                                 <Badge variant="outline" className="rounded-lg font-medium border-slate-100 text-slate-500">
-                                                    {product.category?.name}
+                                                    {product.category?.name || 'Uncategorized'}
                                                 </Badge>
                                             </td>
                                             <td className="p-6 font-black text-slate-900">
@@ -147,7 +147,7 @@ export default function Index({ auth, products, categories, filters = {} }: any)
                                                     {product.is_active ? 'Active' : 'Inactive'}
                                                 </Badge>
                                             </td>
-                                            <td className="p-6">
+                                            <td className="p-6 text-center">
                                                 <div className="flex justify-center gap-2">
                                                     <Link href={route('admin.products.edit', product.id)}>
                                                         <Button variant="ghost" size="icon" className="rounded-xl hover:bg-blue-50 hover:text-blue-600 transition-all">
@@ -172,7 +172,6 @@ export default function Index({ auth, products, categories, filters = {} }: any)
                     </CardContent>
                 </Card>
 
-                {/* Pagination Section - ทันสมัยและสะอาด */}
                 <div className="flex flex-col md:flex-row items-center justify-between gap-4 px-2">
                     <p className="text-sm text-slate-400 font-medium">
                         Showing {products.from} to {products.to} of {products.total} products
@@ -185,7 +184,7 @@ export default function Index({ auth, products, categories, filters = {} }: any)
                                 disabled={!link.url}
                                 onClick={() => link.url && router.get(link.url)}
                                 className={`rounded-xl min-w-[40px] h-10 border-none shadow-none ${
-                                    link.active ? 'bg-purple-900 hover:bg-purple-800' : 'bg-white hover:bg-slate-100 text-slate-600'
+                                    link.active ? 'bg-purple-900 hover:bg-purple-800 text-white' : 'bg-white hover:bg-slate-100 text-slate-600'
                                 }`}
                                 dangerouslySetInnerHTML={{ __html: link.label }}
                             />

@@ -1,8 +1,9 @@
+// resources/js/Pages/Products/Index.tsx
+
 import React, { useState, useEffect } from 'react';
-import { Head, usePage } from '@inertiajs/react';
-import { Filter, Printer } from "lucide-react"; // เพิ่ม Printer icon
+import { Head, usePage, router } from '@inertiajs/react';
+import { Filter, Printer, CheckSquare, Square } from "lucide-react";
 import { Button } from "@/Components/ui/button";
-import { router } from '@inertiajs/react';
 import CategoryMobileFilter from './Partials/CategoryMobileFilter';
 import CategorySidebar from './Partials/CategorySidebar';
 import ProductCard from './Partials/ProductCard';
@@ -10,17 +11,15 @@ import LoadMoreButton from './Partials/LoadMoreButton';
 import SearchFilter from './Partials/SearchFilter';
 import { ProductsIndexProps } from '@/types';
 import { useDebounce } from '@/Hooks/useDebounce';
-import { Checkbox } from "@/Components/ui/checkbox"; // นำเข้า Checkbox สำหรับเลือกสินค้า
+import { Checkbox } from "@/Components/ui/checkbox";
 
 export default function Index({ products: initialProducts, categories, filters }: ProductsIndexProps) {
     const { url } = usePage();
     const [allProducts, setAllProducts] = useState(initialProducts.data);
     const [nextPageUrl, setNextPageUrl] = useState<string | null>(initialProducts.next_page_url);
     const [isLoading, setIsLoading] = useState(false);
-    const [searchTerm, setSearchTerm] = useState(filters.search || '');
-    const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
-    // --- ส่วนที่เพิ่มใหม่: State สำหรับจัดการการเลือกสินค้า ---
+    // --- ระบบจัดการการเลือกสินค้า (Print Selection) ---
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
     const toggleSelect = (id: number) => {
@@ -29,13 +28,21 @@ export default function Index({ products: initialProducts, categories, filters }
         );
     };
 
+    const toggleSelectAllInPage = () => {
+        if (selectedIds.length === allProducts.length && allProducts.length > 0) {
+            setSelectedIds([]);
+        } else {
+            setSelectedIds(allProducts.map((p: any) => p.id));
+        }
+    };
+
     const handlePrintSelected = () => {
         if (selectedIds.length === 0) return;
-        // ส่งข้อมูลไปยังหน้า Print Preview (ต้องสร้าง Route และ Page รองรับ)
+        // ส่งข้อมูลไปยังหน้า Print Labels (ต้องมี Route: products.print-labels รองรับ)
         router.post(route('products.print-labels'), { ids: selectedIds });
     };
-    // --------------------------------------------------
 
+    // อัปเดตข้อมูลเมื่อมีการเปลี่ยนผลลัพธ์จาก Server (Filter/Search)
     useEffect(() => {
         setAllProducts(initialProducts.data);
         setNextPageUrl(initialProducts.next_page_url);
@@ -43,7 +50,7 @@ export default function Index({ products: initialProducts, categories, filters }
 
     const handleSearch = (value: string | null) => {
         router.get(route('products.index'),
-            { ...filters, search: value }, // รวม filter เดิมกับคำค้นหาใหม่
+            { ...filters, search: value },
             { preserveState: true, replace: true }
         );
     };
@@ -71,59 +78,81 @@ export default function Index({ products: initialProducts, categories, filters }
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <header className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                    <div>
+                    <div className="animate-in fade-in slide-in-from-left-4 duration-700">
                         <h1 className="text-4xl font-black text-slate-900 tracking-tighter">Our Collection</h1>
                         <p className="text-slate-500 mt-2 font-medium">เฟอร์นิเจอร์พลาสติกมาตรฐานสากล ทนทาน และดีไซน์ทันสมัย</p>
                     </div>
 
-                    <div className="flex items-center gap-4 w-full md:w-auto">
-                        {/* ปุ่มพิมพ์ Price Point แสดงเมื่อมีการเลือกสินค้า */}
-                        {selectedIds.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                        {/* เครื่องมือจัดการ Selection */}
+                        <div className="flex items-center gap-2 mr-2">
                             <Button
-                                onClick={handlePrintSelected}
-                                className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl animate-in fade-in slide-in-from-right-4"
+                                variant="outline"
+                                size="sm"
+                                onClick={toggleSelectAllInPage}
+                                className="rounded-xl border-slate-200 text-slate-500 font-bold text-xs uppercase tracking-widest"
                             >
-                                <Printer className="w-4 h-4 mr-2" />
-                                พิมพ์ป้ายราคา ({selectedIds.length})
+                                {selectedIds.length === allProducts.length && allProducts.length > 0 ? (
+                                    <CheckSquare className="w-3 h-3 mr-2" />
+                                ) : (
+                                    <Square className="w-3 h-3 mr-2" />
+                                )}
+                                Select All
                             </Button>
-                        )}
+
+                            {selectedIds.length > 0 && (
+                                <Button
+                                    onClick={handlePrintSelected}
+                                    className="bg-purple-900 hover:bg-purple-800 text-white font-bold rounded-xl shadow-lg shadow-purple-200 animate-in zoom-in-95"
+                                >
+                                    <Printer className="w-4 h-4 mr-2" />
+                                    Print Labels ({selectedIds.length})
+                                </Button>
+                            )}
+                        </div>
 
                         <SearchFilter
                             initialValue={filters.search || ''}
                             onSearch={handleSearch}
                         />
                     </div>
-
-                    <div className="hidden lg:block text-sm text-slate-400 font-bold bg-white px-5 py-3 rounded-2xl shadow-[0_2px_10px_-4px_rgba(0,0,0,0.1)] border border-slate-100">
-                        Showing <span className="text-slate-900 font-black">{allProducts.length}</span> of <span className="text-slate-900 font-black">{initialProducts.total}</span> products
-                    </div>
                 </header>
 
                 <div className="flex flex-col md:flex-row gap-10">
+                    {/* Sidebar Filters */}
                     <aside className="w-full md:w-72 shrink-0">
-                        <div className="md:sticky md:top-24 space-y-8">
-                            <CategoryMobileFilter categories={categories} />
-                            <CategorySidebar categories={categories} url={url} />
+                        <div className="md:sticky md:top-24 space-y-8 animate-in fade-in duration-1000">
+                            {/* ส่ง Categories ไปยัง Filter พร้อมระบบป้องกัน Error value เป็นสตริงว่าง */}
+                            <CategoryMobileFilter
+                                categories={categories.filter((c: any) => c.slug)}
+                            />
+                            <CategorySidebar
+                                categories={categories.filter((c: any) => c.slug)}
+                                url={url}
+                            />
                         </div>
                     </aside>
 
+                    {/* Product Grid */}
                     <main className="flex-1 flex flex-col gap-12">
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                             {allProducts.map((product: any) => (
-                                <div key={product.id} className="relative group">
-                                    <div className="absolute top-4 left-4 z-10">
+                                <div key={product.id} className="relative group transition-all duration-300">
+                                    {/* Selection Checkbox Overlay */}
+                                    <div className="absolute top-6 left-6 z-20 transition-transform duration-300 group-hover:scale-110">
                                         <Checkbox
                                             checked={selectedIds.includes(product.id)}
                                             onCheckedChange={() => toggleSelect(product.id)}
-                                            className="w-6 h-6 border-2 border-white bg-white/80 data-[state=checked]:bg-blue-600 shadow-lg rounded-md"
+                                            className="w-7 h-7 border-2 border-slate-200 bg-white/90 data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600 shadow-xl rounded-xl"
                                         />
                                     </div>
-                                    {/* ไม่ต้องส่งค่าที่เกี่ยวข้องกับ description หาก ProductCard มีการดึงไปแสดง */}
-                                    <ProductCard key={product.id} product={product} />
+
+                                    <ProductCard product={product} />
                                 </div>
                             ))}
                         </div>
 
+                        {/* Pagination / Load More */}
                         <LoadMoreButton
                             nextPageUrl={nextPageUrl}
                             isLoading={isLoading}
@@ -132,15 +161,20 @@ export default function Index({ products: initialProducts, categories, filters }
                             onLoadMore={handleLoadMore}
                         />
 
+                        {/* Empty State */}
                         {allProducts.length === 0 && (
-                            <div className="text-center py-32 bg-white rounded-[2.5rem] border-2 border-dashed border-slate-200 shadow-sm">
+                            <div className="text-center py-32 bg-white rounded-[3rem] border-2 border-dashed border-slate-100 shadow-sm animate-in fade-in zoom-in-95">
                                 <div className="bg-slate-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
-                                    <Filter className="w-10 h-10 text-slate-300" />
+                                    <Filter className="w-10 h-10 text-slate-200" />
                                 </div>
                                 <h3 className="text-2xl font-black text-slate-900 tracking-tight">ไม่พบสินค้าที่คุณค้นหา</h3>
-                                <p className="text-slate-400 mt-2 font-bold uppercase text-xs tracking-widest">ลองเลือกหมวดหมู่สินค้าอื่น หรือแสดงทั้งหมด</p>
-                                <Button variant="link" onClick={() => router.get(route('products.index'))} className="mt-6 text-primary font-black uppercase text-sm tracking-tight">
-                                    แสดงสินค้าทั้งหมด
+                                <p className="text-slate-400 mt-2 font-bold uppercase text-[10px] tracking-[0.2em]">ลองเลือกหมวดหมู่สินค้าอื่น หรือล้างตัวกรอง</p>
+                                <Button
+                                    variant="link"
+                                    onClick={() => router.get(route('products.index'))}
+                                    className="mt-6 text-purple-600 font-black uppercase text-xs tracking-widest hover:no-underline"
+                                >
+                                    Reset All Filters
                                 </Button>
                             </div>
                         )}

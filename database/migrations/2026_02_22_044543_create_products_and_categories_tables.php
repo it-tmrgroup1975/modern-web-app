@@ -16,6 +16,7 @@ return new class extends Migration
             $table->id();
             $table->string('name'); // เช่น เก้าอี้, ตู้ลิ้นชัก
             $table->string('slug')->unique();
+            $table->text('description')->nullable();
             $table->timestamps();
         });
 
@@ -24,6 +25,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('category_id')->constrained();
             $table->string('name'); // เช่น ตู้ลิ้นชักพลาสติก รุ่น Modern-01
+            $table->string('sku')->unique();
             $table->string('slug')->unique();
             $table->text('description');
             $table->decimal('price', 10, 2);
