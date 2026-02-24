@@ -15,6 +15,7 @@ import {
     Filter, ChevronLeft, ChevronRight, Package
 } from 'lucide-react';
 import { useDebounce } from '@/Hooks/useDebounce';
+import ProductImportModal from './Partials/ProductImportModal';
 
 export default function Index({ auth, products, categories, filters = {} }: any) {
     const [search, setSearch] = useState(filters?.search ?? '');
@@ -51,9 +52,9 @@ export default function Index({ auth, products, categories, filters = {} }: any)
                         <p className="text-slate-500 text-sm">จัดการรายการสินค้าและสต็อกของโรงงาน</p>
                     </div>
                     <div className="flex items-center gap-3">
-                        <Button variant="outline" className="rounded-2xl border-slate-200">
-                            <FileUp className="w-4 h-4 mr-2 text-slate-500" /> Import
-                        </Button>
+                        {/* เรียกใช้ Component ที่แยกออกมา */}
+                        <ProductImportModal />
+                        
                         <Link href={route('admin.products.create')}>
                             <Button className="rounded-2xl bg-purple-900 hover:bg-purple-800 shadow-lg shadow-purple-200">
                                 <Plus className="w-4 h-4 mr-2" /> New Product
@@ -183,9 +184,8 @@ export default function Index({ auth, products, categories, filters = {} }: any)
                                 variant={link.active ? 'default' : 'outline'}
                                 disabled={!link.url}
                                 onClick={() => link.url && router.get(link.url)}
-                                className={`rounded-xl min-w-[40px] h-10 border-none shadow-none ${
-                                    link.active ? 'bg-purple-900 hover:bg-purple-800 text-white' : 'bg-white hover:bg-slate-100 text-slate-600'
-                                }`}
+                                className={`rounded-xl min-w-[40px] h-10 border-none shadow-none ${link.active ? 'bg-purple-900 hover:bg-purple-800 text-white' : 'bg-white hover:bg-slate-100 text-slate-600'
+                                    }`}
                                 dangerouslySetInnerHTML={{ __html: link.label }}
                             />
                         ))}

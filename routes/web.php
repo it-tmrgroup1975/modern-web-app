@@ -8,7 +8,12 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('products/download-template', function () {
+        return (new \App\Actions\ExportProductTemplate)->download();
+    })->name('products.template');
+
     Route::resource('products', AdminProductController::class);
+
     Route::post('products/import', [AdminProductController::class, 'import'])->name('products.import');
 });
 

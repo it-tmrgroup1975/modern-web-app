@@ -129,11 +129,12 @@ class AdminProductController extends Controller
     public function import(Request $request)
     {
         $request->validate([
-            'file' => 'required|mimes:xlsx,xls,csv',
+            'file' => 'required|mimes:xlsx,xls,csv|max:10240', // จำกัด 10MB
         ]);
 
-        Excel::import(new ProductsImport, $request->file('file'));
+        // เรียกใช้ Import Class (ตามแผนที่วางไว้ก่อนหน้า)
+        \Maatwebsite\Excel\Facades\Excel::import(new \App\Imports\ProductsImport, $request->file('file'));
 
-        return back()->with('success', 'Products are being imported in the background.');
+        return back()->with('success', 'นำเข้าข้อมูลสินค้าเรียบร้อยแล้ว');
     }
 }
