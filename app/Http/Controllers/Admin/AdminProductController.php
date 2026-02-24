@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use App\Imports\ProductsImport;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Str;
 
 class AdminProductController extends Controller
 {
@@ -83,28 +84,38 @@ class AdminProductController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(ProductRequest $request, Product $product)
+    public function update(Request $request, Product $product)
     {
-        $data = $request->validated();
+        // 1. Validation
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'category_id' => 'required|exists:categories,id',
+            'price' => 'required|numeric|min:0',
+            // เพิ่ม validation สำหรับ slug (ถ้ามีให้กรอก) หรือข้ามไปถ้าจะ gen เอง
+        ]);
 
-        // จัดการเปลี่ยนรูปภาพใหม่
-        if ($request->hasFile('image')) {
-            // ลบรูปภาพเดิมถ้ามี
-            if ($product->image_url) {
-                $oldPath = str_replace('/storage/', '', $product->image_url);
-                Storage::disk('public')->delete($oldPath);
-            }
+        // 2. ป้องกัน Slug ว่าง (Logic สำคัญ)
+        // ถ้า slug ที่ส่งมาว่าง หรือไม่ได้ส่งมา ให้สร้างใหม่จากชื่อสินค้า
+        $slug = $request->filled('slug')
+            ? Str::slug($request->slug)
+            : Str::slug($request->name);
 
-            $path = $request->file('image')->store('products', 'public');
-            $data['image_url'] = '/storage/' . $path;
+        // ตรวจสอบความซ้ำซ้อนของ Slug (กรณีชื่อซ้ำกัน)
+        $existingSlugCount = Product::where('slug', $slug)
+            ->where('id', '!=', $product->id)
+            ->count();
+
+        if ($existingSlugCount > 0) {
+            $slug = $slug . '-' . uniqid();
         }
 
-        $this->productService->update($product, $data);
+        // 3. ทำการอัปเดตข้อมูล
+        $product->update(array_merge($request->all(), [
+            'slug' => $slug
+        ]));
 
-        return redirect()->route('admin.products.index')
-            ->with('success', 'แก้ไขข้อมูลสินค้าและรูปภาพเรียบร้อยแล้ว');
+        return back()->with('success', 'อัปเดตข้อมูลสินค้าเรียบร้อยแล้ว');
     }
-
 
     /**
      * Remove the specified resource from storage.
