@@ -7,32 +7,40 @@ use Illuminate\Database\Eloquent\Builder;
 
 class Search
 {
-    /**
-     * Handle the incoming query for product search.
-     * * @param Builder $query
-     * @param Closure $next
-     * @return mixed
-     */
     public function handle(Builder $query, Closure $next)
     {
         $term = request('search');
 
-        // ตรวจสอบว่ามีการส่งคำค้นหามาหรือไม่
         if (blank($term)) {
             return $next($query);
         }
 
-        // ใช้ Pipeline ในการจัดการ Query
-        // 1. select('*') เพื่อดึงข้อมูลพื้นฐานทั้งหมด
-        // 2. selectRaw เพื่อคำนวณคะแนนความเกี่ยวข้อง (Relevance Score)
-        // 3. whereFullText เพื่อใช้ความสามารถของ Full-Text Index ใน Database
-        // 4. orderByRaw เพื่อเรียงลำดับสินค้าที่ตรงประเด็นที่สุดขึ้นก่อน
+        // 1. ตรวจสอบคำสั้น (เหมือนเดิม)
+        if (mb_strlen($term) < 3) {
+            $query->where(function ($q) use ($term) {
+                $q->where('name', 'LIKE', "%{$term}%")
+                    ->orWhere('description', 'LIKE', "%{$term}%");
+            });
+            return $next($query);
+        }
+
+        /**
+         * >>> เพิ่ม/แก้ไข ส่วนนี้ครับ <<<
+         * นำคำค้นหามาแยกช่องว่าง แล้วเติม * ต่อท้ายทุกคำ
+         * ตัวอย่าง: "ตู้ สีขาว" -> "ตู้* สีขาว*"
+         */
+        $booleanTerm = collect(explode(' ', $term))
+            ->filter() // กรองช่องว่างทิ้งกรณีเคาะซ้ำ
+            ->map(fn($word) => $word . '*')
+            ->implode(' ');
+
+        // 2. นำ $booleanTerm ที่เตรียมเสร็จแล้วไปใช้ใน Query
         $query->select('*')
             ->selectRaw(
-                "MATCH(name, description) AGAINST(? IN NATURAL LANGUAGE MODE) AS relevance",
-                [$term]
+                "MATCH(name, description) AGAINST(? IN BOOLEAN MODE) AS relevance",
+                [$booleanTerm]
             )
-            ->whereFullText(['name', 'description'], $term)
+            ->whereFullText(['name', 'description'], $booleanTerm, ['mode' => 'boolean'])
             ->orderByRaw("relevance DESC");
 
         return $next($query);
