@@ -12,14 +12,15 @@ class GetCatalogProducts
     /**
      * Execute the action to get filtered and paginated products.
      * ยกระดับการดึงข้อมูลเพื่อรองรับ Multiple Images และ Industrial Catalog
-     * * @param bool $onlyActive กำหนดว่าจะกรองเฉพาะสินค้าที่ Active หรือไม่ (Default: true)
+     *
+     * @param bool $onlyActive กำหนดว่าจะกรองเฉพาะสินค้าที่ Active หรือไม่ (Default: true)
      * @return LengthAwarePaginator
      */
     public function execute(bool $onlyActive = true): LengthAwarePaginator
     {
         return app(Pipeline::class)
             /** * Performance Tip: ใช้ with(['category', 'images']) เพื่อโหลดข้อมูลหมวดหมู่และรูปภาพทั้งหมด
-             * ลดปัญหา N+1 Query และรองรับการแสดงผล Gallery ในหน้า Product Show
+             * ลดปัญหา N+1 Query และรองรับการดึงรูปหลัก (Primary Image) มาแสดงในหน้า Catalog
              */
             ->send(Product::query()->with(['category', 'images']))
             ->through([
