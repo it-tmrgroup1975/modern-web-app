@@ -7,7 +7,7 @@ use App\Models\Product;
 use App\Models\Category;
 use App\Services\ProductService;
 use App\Http\Requests\ProductRequest;
-use App\Actions\GetCatalogProducts; // ใช้ Action เดิมที่เราทำไว้เพื่อความ Consistent
+use App\Actions\GetCatalogProducts;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
 use App\Imports\ProductsImport;
@@ -24,16 +24,11 @@ class AdminProductController extends Controller
         $this->productService = $productService;
     }
 
-    /**
-     * Display a listing of the resource.
-     */
     public function index(Request $request, GetCatalogProducts $getCatalogProducts)
     {
         return Inertia::render('Admin/Products/Index', [
-            // ส่ง false เพื่อบอกว่า "ไม่ต้องกรองเฉพาะสินค้าที่ active"
             'products' => $getCatalogProducts->execute(false),
             'categories' => Category::all(),
-            // ส่งค่า filters กลับไป โดยใช้ default เป็น array เปล่าถ้าไม่มีข้อมูล
             'filters' => $request->only(['search', 'category']) ?: new \stdClass(),
             'flash' => [
                 'success' => session('success'),
@@ -41,9 +36,6 @@ class AdminProductController extends Controller
         ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
         return Inertia::render('Admin/Products/Create', [
@@ -51,100 +43,97 @@ class AdminProductController extends Controller
         ]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(ProductRequest $request)
     {
         $data = $request->validated();
 
-        // จัดการอัปโหลดรูปภาพ
+        // จัดการอัปโหลดรูปภาพหลัก (ถ้ามี)
         if ($request->hasFile('image')) {
             $path = $request->file('image')->store('products', 'public');
             $data['image_url'] = '/storage/' . $path;
         }
 
-        $this->productService->create($data);
+        $product = $this->productService->create($data);
+
+        // หากมีการอัปโหลดรูปภาพหลัก ให้บันทึกลงตาราง product_images ด้วยเป็นรูปแรก
+        if (isset($data['image_url'])) {
+            $product->images()->create([
+                'image_path' => $data['image_url'],
+                'is_primary' => true,
+                'sort_order' => 1
+            ]);
+        }
 
         return redirect()->route('admin.products.index')
             ->with('success', 'เพิ่มสินค้าและอัปโหลดรูปภาพเรียบร้อยแล้ว');
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(Product $product)
     {
         return Inertia::render('Admin/Products/Edit', [
-            'product' => $product->load('category'),
+            // โหลดทั้ง category และ images เพื่อแสดงในหน้าแก้ไข
+            'product' => $product->load(['category', 'images']),
             'categories' => Category::all(),
         ]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, Product $product)
     {
-        // 1. Validation เพิ่มการตรวจสอบรูปภาพ
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
             'price' => 'required|numeric|min:0',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048', // จำกัด 2MB
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
 
-        // 2. จัดการ Slug (คงเดิมจากโค้ดของคุณ)
         $slug = $request->filled('slug') ? Str::slug($request->slug) : Str::slug($request->name);
-        // ... Logic ตรวจสอบ slug ซ้ำ ...
 
-        // 3. จัดการรูปภาพ (Image Update Logic)
         if ($request->hasFile('image')) {
-            // ลบรูปภาพเก่าถ้ามี
+            // ลบรูปภาพเก่าใน Storage
             if ($product->image_url) {
-                Storage::disk('public')->delete($product->image_url);
+                Storage::disk('public')->delete(str_replace('/storage/', '', $product->image_url));
             }
 
-            // เก็บรูปภาพใหม่ใน folder 'products'
             $path = $request->file('image')->store('products', 'public');
-            $validated['image_url'] = '/storage/'.$path; // อัปเดต path ลงใน array ข้อมูล
+            $validated['image_url'] = '/storage/'.$path;
+
+            // อัปเดตรูปหลักในตาราง product_images
+            $product->images()->where('is_primary', true)->delete();
+            $product->images()->create([
+                'image_path' => $validated['image_url'],
+                'is_primary' => true,
+                'sort_order' => 1
+            ]);
         }
 
-        // 4. อัปเดตข้อมูล
         $product->update(array_merge($validated, ['slug' => $slug]));
 
         return back()->with('success', 'อัปเดตข้อมูลสินค้าและรูปภาพเรียบร้อยแล้ว');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Product $product)
     {
-        // ลบรูปภาพออกจาก Storage เมื่อลบสินค้า
-        if ($product->image_url) {
-            $path = str_replace('/storage/', '', $product->image_url);
+        // 1. ลบไฟล์รูปภาพทั้งหมดที่เกี่ยวข้องออกจาก Storage
+        foreach ($product->images as $image) {
+            $path = str_replace('/storage/', '', $image->image_path);
             Storage::disk('public')->delete($path);
         }
 
+        // 2. ลบข้อมูลสินค้า (ความสัมพันธ์ใน DB จะถูกลบอัตโนมัติด้วย onDelete('cascade'))
         $product->delete();
 
         return redirect()->route('admin.products.index')
-            ->with('success', 'ลบสินค้าและไฟล์รูปภาพเรียบร้อยแล้ว');
+            ->with('success', 'ลบสินค้าและไฟล์รูปภาพทั้งหมดเรียบร้อยแล้ว');
     }
 
-    /**
-     * Handle Excel Import
-     */
     public function import(Request $request)
     {
         $request->validate([
-            'file' => 'required|mimes:xlsx,xls,csv|max:10240', // จำกัด 10MB
+            'file' => 'required|mimes:xlsx,xls,csv|max:10240',
         ]);
 
-        // เรียกใช้ Import Class (ตามแผนที่วางไว้ก่อนหน้า)
-        \Maatwebsite\Excel\Facades\Excel::import(new \App\Imports\ProductsImport, $request->file('file'));
+        Excel::import(new ProductsImport, $request->file('file'));
 
-        return back()->with('success', 'นำเข้าข้อมูลสินค้าเรียบร้อยแล้ว');
+        return back()->with('success', 'นำเข้าข้อมูลสินค้าและแกลเลอรีรูปภาพเรียบร้อยแล้ว');
     }
 }
