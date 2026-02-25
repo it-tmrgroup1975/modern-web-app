@@ -20,6 +20,9 @@ interface PrintViewProps {
 }
 
 export default function PrintView({ products }: PrintViewProps) {
+    const placeholderText = "Modern Furniture";
+    const fallbackImage = `https://placehold.co/600x250/FFFFFF/64748B?text=${placeholderText}`;
+
     useEffect(() => {
         setTimeout(() => window.print(), 500);
     }, []);
@@ -83,7 +86,7 @@ export default function PrintView({ products }: PrintViewProps) {
                             <div className="flex-[5] flex items-center justify-center relative my-2 min-h-0">
                                 <div className="absolute inset-0 bg-[radial-gradient(circle,_#f8fafc_0%,_transparent_70%)] opacity-60" />
                                 <img
-                                    src={product.image_url}
+                                    src={product.image_url || fallbackImage}
                                     className="max-w-[95%] max-h-[175mm] object-contain drop-shadow-[0_40px_50px_rgba(0,0,0,0.12)]"
                                     alt={product.name}
                                 />
