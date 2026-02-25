@@ -68,10 +68,10 @@ export default function Show({ product, relatedProducts }: Props) {
                                 {product.name}
                             </h1>
                             <div className="flex items-baseline gap-2">
-                                <span className="text-sm font-bold text-slate-400">THB</span>
+                                {/* <span className="text-sm font-bold text-slate-400">THB</span>
                                 <span className="text-4xl font-black text-slate-900 tracking-tighter">
                                     {Number(product.price).toLocaleString()}
-                                </span>
+                                </span> */}
                             </div>
                         </div>
 

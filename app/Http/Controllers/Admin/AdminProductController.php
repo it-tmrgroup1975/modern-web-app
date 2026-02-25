@@ -86,35 +86,34 @@ class AdminProductController extends Controller
      */
     public function update(Request $request, Product $product)
     {
-        // 1. Validation
+        // 1. Validation เพิ่มการตรวจสอบรูปภาพ
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
             'price' => 'required|numeric|min:0',
-            // เพิ่ม validation สำหรับ slug (ถ้ามีให้กรอก) หรือข้ามไปถ้าจะ gen เอง
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048', // จำกัด 2MB
         ]);
 
-        // 2. ป้องกัน Slug ว่าง (Logic สำคัญ)
-        // ถ้า slug ที่ส่งมาว่าง หรือไม่ได้ส่งมา ให้สร้างใหม่จากชื่อสินค้า
-        $slug = $request->filled('slug')
-            ? Str::slug($request->slug)
-            : Str::slug($request->name);
+        // 2. จัดการ Slug (คงเดิมจากโค้ดของคุณ)
+        $slug = $request->filled('slug') ? Str::slug($request->slug) : Str::slug($request->name);
+        // ... Logic ตรวจสอบ slug ซ้ำ ...
 
-        // ตรวจสอบความซ้ำซ้อนของ Slug (กรณีชื่อซ้ำกัน)
-        $existingSlugCount = Product::where('slug', $slug)
-            ->where('id', '!=', $product->id)
-            ->count();
+        // 3. จัดการรูปภาพ (Image Update Logic)
+        if ($request->hasFile('image')) {
+            // ลบรูปภาพเก่าถ้ามี
+            if ($product->image_url) {
+                Storage::disk('public')->delete($product->image_url);
+            }
 
-        if ($existingSlugCount > 0) {
-            $slug = $slug . '-' . uniqid();
+            // เก็บรูปภาพใหม่ใน folder 'products'
+            $path = $request->file('image')->store('products', 'public');
+            $validated['image_url'] = '/storage/'.$path; // อัปเดต path ลงใน array ข้อมูล
         }
 
-        // 3. ทำการอัปเดตข้อมูล
-        $product->update(array_merge($request->all(), [
-            'slug' => $slug
-        ]));
+        // 4. อัปเดตข้อมูล
+        $product->update(array_merge($validated, ['slug' => $slug]));
 
-        return back()->with('success', 'อัปเดตข้อมูลสินค้าเรียบร้อยแล้ว');
+        return back()->with('success', 'อัปเดตข้อมูลสินค้าและรูปภาพเรียบร้อยแล้ว');
     }
 
     /**

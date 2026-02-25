@@ -97,13 +97,39 @@ export default function PrintView({ products }: PrintViewProps) {
                                         <div className="h-[1px] w-4 bg-red-600" />
                                         <span className="text-red-600 text-[11px] font-black uppercase tracking-[0.2em]">Net Price</span>
                                     </div>
-                                    <div className="flex items-baseline">
-                                        <span className="text-3xl font-light text-slate-300 mr-2">฿</span>
-                                        <span className="text-5xl font-black text-slate-900 tracking-tighter italic">
-                                            {product.price.toLocaleString()}
+
+                                    {/* ส่วนแสดงผลตัวเลขดิจิทัล 4 หลัก - สร้างด้วย CSS 7-Segment */}
+                                    <div className="flex items-center mt-6 mb-4 select-none digital-lcd-wrapper group/price">
+                                        {/* สัญลักษณ์เงินบาท - ดีไซน์ Gray Line */}
+                                        <span className="text-5xl font-extralight text-gray-200 mr-4 transform -translate-y-1">
+                                            ฿
                                         </span>
-                                        <span className="text-2xl font-bold text-slate-300 ml-1">.-</span>
+
+                                        {/* กลุ่มช่องดิจิทัล 4 หลัก (Digital Slots) */}
+                                        <div className="flex items-center gap-2 bg-gray-50/30 p-2 rounded-xl border border-gray-100">
+                                            {[1, 2, 3, 4].map((i) => (
+                                                <div key={i} className="digital-segment-container">
+                                                    {/* วาดเลข 8 ครบทั้ง 7 Segments ด้วย CSS */}
+                                                    <div className="segment seg-top" />
+                                                    <div className="segment seg-top-l" />
+                                                    <div className="segment seg-top-r" />
+                                                    <div className="segment seg-mid" />
+                                                    <div className="segment seg-bot-l" />
+                                                    <div className="segment seg-bot-r" />
+                                                    <div className="segment seg-bot" />
+
+                                                    {/* เลเยอร์ Overlay เพิ่มมิติความลึก */}
+                                                    <div className="absolute inset-0 bg-gradient-to-br from-transparent via-gray-400/5 to-transparent pointer-events-none" />
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {/* ส่วนท้ายราคา - ดีไซน์ Gray Line */}
+                                        <span className="text-3xl font-bold text-gray-200 ml-3">
+                                            .-
+                                        </span>
                                     </div>
+
                                 </div>
 
                                 {/* QR & Specs Section */}
