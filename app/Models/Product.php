@@ -2,14 +2,15 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory; // ต้องมีบรรทัดนี้
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany; // เพิ่มการนำเข้า HasMany
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Product extends Model
 {
-    use HasFactory, SoftDeletes; // ใส่ Trait เข้าไปใน Class
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'category_id',
@@ -18,7 +19,7 @@ class Product extends Model
         'slug',
         'description',
         'price',
-        'image_url',
+        'image_url', // ยังคงไว้เพื่อความ Compatible หรือใช้เก็บรูปสำรอง
         'attributes',
         'stock',
         'is_active'
@@ -29,7 +30,16 @@ class Product extends Model
         return $this->belongsTo(Category::class);
     }
 
+    /**
+     * เพิ่มความสัมพันธ์ One-to-Many กับรูปภาพสินค้า
+     * เรียงลำดับตาม sort_order เพื่อใช้ในการทำ Gallery
+     */
+    public function images(): HasMany
+    {
+        return $this->hasMany(ProductImage::class)->orderBy('sort_order');
+    }
+
     protected $casts = [
-        'attributes' => 'array', // บังคับให้ attributes กลับมาเป็น array อัตโนมัติ
+        'attributes' => 'array',
     ];
 }

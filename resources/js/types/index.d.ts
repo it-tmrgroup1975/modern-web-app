@@ -21,30 +21,48 @@ export interface Category {
     name: string;
     slug: string;
     description?: string;
-    image_url?: string;
-    products_count?: number; // สำหรับแสดงจำนวนสินค้าใน Sidebar
     created_at: string;
     updated_at: string;
+}
+
+/**
+ * เพิ่ม Interface สำหรับรูปภาพสินค้า
+ */
+export interface ProductImage {
+    id: number;
+    product_id: number;
+    image_path: string;
+    sort_order: number;
+    is_primary: boolean;
+    created_at?: string;
+    updated_at?: string;
 }
 
 export interface Product {
     id: number;
     category_id: number;
+    sku: string;
     name: string;
     slug: string;
     description: string;
     price: number;
-    image_url: string;
-    stock_quantity: number;
-    specifications?: {
+
+    // เปลี่ยนจาก image_url: string เป็น images: ProductImage[]
+    images: ProductImage[];
+
+    attributes: {
+        color?: string;
         material?: string;
         dimensions?: string;
-        weight_capacity?: string;
-        is_uv_resistant?: boolean;
-    };
+        [key: string]: any;
+    } | null;
+
+    stock: number;
+    is_active: boolean;
     category?: Category;
     created_at: string;
     updated_at: string;
+    deleted_at?: string | null;
 }
 
 // สำหรับข้อมูลที่ส่งมาจาก Inertia ในหน้า Index

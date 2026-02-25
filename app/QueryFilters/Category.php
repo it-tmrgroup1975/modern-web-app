@@ -8,23 +8,36 @@ use Illuminate\Database\Eloquent\Builder;
 class Category
 {
     /**
-     * Handle the incoming query for category filtering.
-     * * @param Builder $query
+     * Handle the incoming query for category filtering via Pipeline.
+     * ยกระดับการกรองให้รองรับทั้ง ID และ Slug เพื่อความยืดหยุ่นสูงสุด
+     *
+     * @param Builder $query
      * @param Closure $next
      * @return mixed
      */
     public function handle(Builder $query, Closure $next)
     {
-        // ใช้ request()->filled() เพื่อตรวจสอบทั้งการมีอยู่ของ key และค่าที่ไม่เป็นค่าว่าง (non-empty)
+        // ตรวจสอบว่ามีการส่งค่า category มาใน Request หรือไม่
         if (!request()->filled('category')) {
             return $next($query);
         }
 
-        // ใช้ arrow function เพื่อความกระชับ
-        // และแยก logic การ query ออกมาให้ชัดเจน
-        $query->whereHas('category', fn($q) =>
-            $q->where('slug', request('category'))
-        );
+        $categoryParam = request('category');
+
+        /**
+         * Logic การกรองแบบ Multi-Format:
+         * 1. หากค่าที่ส่งมาเป็นตัวเลข (Numeric) -> กรองด้วย category_id โดยตรง (Performance สูงสุด)
+         * 2. หากเป็นข้อความ (String/Slug) -> กรองผ่านความสัมพันธ์ 'category' โดยใช้ Slug (SEO Friendly)
+         */
+        $query->where(function ($q) use ($categoryParam) {
+            if (is_numeric($categoryParam)) {
+                $q->where('category_id', $categoryParam);
+            } else {
+                $q->whereHas('category', fn($subQuery) =>
+                    $subQuery->where('slug', $categoryParam)
+                );
+            }
+        });
 
         return $next($query);
     }

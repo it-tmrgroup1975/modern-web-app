@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import { Button } from "@/Components/ui/button";
 import { Badge } from "@/Components/ui/badge";
@@ -11,17 +11,25 @@ import {
     Ruler,
     Palette
 } from "lucide-react";
-import ProductCard from './Partials/ProductCard'; // ใช้ Component ที่เรา Refactor ไว้
+import ProductCard from './Partials/ProductCard';
+import { Product } from '@/types'; // อ้างอิง Interface ที่เราปรับปรุงไว้
 
 interface Props {
-    product: any;
-    relatedProducts: any[];
+    product: Product;
+    relatedProducts: Product[];
 }
 
 export default function Show({ product, relatedProducts }: Props) {
+    // กำหนดรูปหลักเริ่มต้น: หาจาก is_primary หรือใช้รูปแรกของ Array ถ้าไม่มีให้ใช้ Placeholder
+    const [activeImage, setActiveImage] = useState(
+        product.images?.find(img => img.is_primary)?.image_path ||
+        product.images?.[0]?.image_path ||
+        `https://placehold.co/800x800/FFFFFF/64748B?text=${product.name}`
+    );
 
-    const placeholderText = "Modern Furniture";
-    const fallbackImage = `https://placehold.co/600x200/FFFFFF/64748B?text=${placeholderText}`;
+    const formatPrice = (price: number) => {
+        return new Intl.NumberFormat('th-TH').format(price);
+    };
 
     return (
         <div className="bg-white min-h-screen pb-20">
@@ -40,42 +48,57 @@ export default function Show({ product, relatedProducts }: Props) {
             <main className="max-w-7xl mx-auto px-4">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
 
-                    {/* Left: Product Image Showcase */}
-                    <section className="space-y-4">
-                        <div className="aspect-square bg-slate-50 rounded-[3rem] overflow-hidden flex items-center justify-center p-12 border border-slate-100">
+                    {/* Left: Product Image Showcase (Gallery Logic) */}
+                    <section className="space-y-6">
+                        {/* Main Large Image */}
+                        <div className="aspect-square bg-slate-50 rounded-[3rem] overflow-hidden flex items-center justify-center p-8 border border-slate-100 shadow-inner">
                             <img
-                                src={product.image_url || fallbackImage}
+                                src={activeImage}
                                 alt={product.name}
-                                className="object-contain w-full h-full transform hover:scale-105 transition-transform duration-700"
+                                className="object-contain w-full h-full transform transition-all duration-700 ease-in-out"
                             />
                         </div>
-                        {/* Image Thumbnails (ถ้ามีหลายรูปในอนาคต) */}
-                        <div className="grid grid-cols-4 gap-4">
-                            {[1, 2, 3, 4].map((i) => (
-                                // <div key={i} className="aspect-square bg-slate-50 rounded-2xl border border-slate-100 opacity-50 hover:opacity-100 cursor-pointer transition-opacity" />
-                                <img
-                                    src={product.image_url || `https://via.placeholder.com/800x800?text=${product.name}`}
-                                    alt="Modern Furniture"
-                                    className="object-contain w-full h-full transform hover:scale-105 transition-transform duration-700"
-                                />
-                            ))}
-                        </div>
+
+                        {/* Image Thumbnails Grid */}
+                        {product.images && product.images.length > 1 && (
+                            <div className="grid grid-cols-4 gap-4">
+                                {product.images.map((img) => (
+                                    <button
+                                        key={img.id}
+                                        onClick={() => setActiveImage(img.image_path)}
+                                        className={`aspect-square bg-slate-50 rounded-2xl border-2 overflow-hidden transition-all
+                                            ${activeImage === img.image_path
+                                                ? 'border-primary ring-2 ring-primary/10 opacity-100'
+                                                : 'border-slate-100 opacity-60 hover:opacity-100'
+                                            }`}
+                                    >
+                                        <img
+                                            src={img.image_path}
+                                            alt={`${product.name} thumbnail`}
+                                            className="object-cover w-full h-full"
+                                        />
+                                    </button>
+                                ))}
+                            </div>
+                        )}
                     </section>
 
                     {/* Right: Product Info & Specs */}
                     <section className="flex flex-col gap-8">
                         <div className="space-y-4">
-                            <Badge variant="outline" className="px-4 py-1.5 rounded-full border-primary/20 text-primary bg-primary/5 font-bold uppercase tracking-widest text-[10px]">
-                                {product.category.name}
-                            </Badge>
+                            {product.category && (
+                                <Badge variant="outline" className="px-4 py-1.5 rounded-full border-primary/20 text-primary bg-primary/5 font-bold uppercase tracking-widest text-[10px]">
+                                    {product.category.name}
+                                </Badge>
+                            )}
                             <h1 className="text-4xl md:text-5xl font-black text-slate-900 leading-tight">
                                 {product.name}
                             </h1>
                             <div className="flex items-baseline gap-2">
-                                {/* <span className="text-sm font-bold text-slate-400">THB</span>
+                                <span className="text-sm font-bold text-slate-400">THB</span>
                                 <span className="text-4xl font-black text-slate-900 tracking-tighter">
-                                    {Number(product.price).toLocaleString()}
-                                </span> */}
+                                    {formatPrice(product.price)}
+                                </span>
                             </div>
                         </div>
 
@@ -91,7 +114,9 @@ export default function Show({ product, relatedProducts }: Props) {
                                 </div>
                                 <div>
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Dimensions</p>
-                                    <p className="text-sm font-bold text-slate-700">Standard Size</p>
+                                    <p className="text-sm font-bold text-slate-700">
+                                        {product.attributes?.dimensions || 'Standard Size'}
+                                    </p>
                                 </div>
                             </div>
                             <div className="flex items-start gap-3">
@@ -99,8 +124,10 @@ export default function Show({ product, relatedProducts }: Props) {
                                     <Palette className="w-5 h-5 text-primary" />
                                 </div>
                                 <div>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Color Options</p>
-                                    <p className="text-sm font-bold text-slate-700">{product.attributes?.color || 'Multi-color'}</p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Color Option</p>
+                                    <p className="text-sm font-bold text-slate-700">
+                                        {product.attributes?.color || 'Multi-color'}
+                                    </p>
                                 </div>
                             </div>
                             <div className="flex items-start gap-3">
@@ -118,17 +145,20 @@ export default function Show({ product, relatedProducts }: Props) {
                                 </div>
                                 <div>
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Material</p>
-                                    <p className="text-sm font-bold text-slate-700">High-Grade PP</p>
+                                    <p className="text-sm font-bold text-slate-700">
+                                        {product.attributes?.material || 'High-Grade PP'}
+                                    </p>
                                 </div>
                             </div>
                         </Card>
 
                         {/* Action Buttons */}
                         <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                            <Button className="flex-1 h-16 rounded-2xl bg-slate-900 hover:bg-primary text-lg font-black transition-all">
+                            <Button className="flex-1 h-16 rounded-2xl bg-slate-900 hover:bg-primary text-lg font-black transition-all group">
                                 ENQUIRE NOW
+                                <Box className="ml-2 w-5 h-5 group-hover:rotate-12 transition-transform" />
                             </Button>
-                            <Button variant="outline" className="h-16 px-8 rounded-2xl border-2 font-black flex gap-2">
+                            <Button variant="outline" className="h-16 px-8 rounded-2xl border-2 font-black flex gap-2 hover:bg-slate-50">
                                 <Truck className="w-5 h-5" /> SHIPPING INFO
                             </Button>
                         </div>
@@ -136,11 +166,19 @@ export default function Show({ product, relatedProducts }: Props) {
                 </div>
 
                 {/* Related Products Section */}
-                {relatedProducts.length > 0 && (
+                {relatedProducts && relatedProducts.length > 0 && (
                     <section className="mt-32 space-y-10">
-                        <div className="flex items-end justify-between">
-                            <h2 className="text-3xl font-black text-slate-900 tracking-tight">Related Collection</h2>
-                            <Link href={route('products.index')} className="text-sm font-bold text-primary hover:underline">VIEW ALL</Link>
+                        <div className="flex items-end justify-between border-b border-slate-100 pb-6">
+                            <div>
+                                <h2 className="text-3xl font-black text-slate-900 tracking-tight">Related Collection</h2>
+                                <p className="text-slate-400 text-sm font-bold mt-1 uppercase tracking-widest">More from {product.category?.name}</p>
+                            </div>
+                            <Link
+                                href={route('products.index', { category: product.category?.id })}
+                                className="text-sm font-bold text-primary hover:text-primary/80 transition-colors border-b-2 border-primary"
+                            >
+                                VIEW ALL
+                            </Link>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                             {relatedProducts.map((related) => (

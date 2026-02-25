@@ -27,15 +27,15 @@ class ProductController extends Controller
         ]);
     }
 
-    public function printLabels(\Illuminate\Http\Request $request)
+    public function printLabels(Request $request)
     {
         $validated = $request->validate([
             'ids' => 'required|array',
             'ids.*' => 'exists:products,id',
         ]);
 
-        $products = \App\Models\Product::whereIn('id', $validated['ids'])
-            ->with('category')
+        $products = Product::whereIn('id', $validated['ids'])
+            ->with(['category', 'images']) // เพิ่มการโหลด images สำหรับพิมพ์ป้าย
             ->get();
 
         return inertia('Products/PrintView', [
@@ -65,7 +65,7 @@ class ProductController extends Controller
      */
     public function show(string $slug, GetProductDetail $getProductDetail): Response
     {
-        // เรียกใช้ Action เพื่อดึงข้อมูลสินค้าและสินค้าที่เกี่ยวข้อง
+        // ภายใน GetProductDetail Action ควรมีการโหลด with('images') ไว้แล้ว
         $data = $getProductDetail->execute($slug);
 
         return Inertia::render('Products/Show', [

@@ -11,26 +11,20 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/Components/ui/tooltip";
+import { Product } from '@/types'; // ใช้ Interface กลางที่เราปรับปรุงไว้
 
-interface ProductProps {
-    id: number;
-    name: string;
-    slug: string;
-    stock: number;
-    image_url?: string | null;
-    category?: {
-        name: string;
-        slug: string;
-    };
-}
-
-export default function ProductCard({ product }: { product: ProductProps }) {
+export default function ProductCard({ product }: { product: Product }) {
     // กำหนด URL ของสินค้า
     const productUrl = product?.slug ? route('products.show', { product: product.slug }) : '#';
 
-    // จัดการ Image Placeholder โดยใช้ชื่อหมวดหมู่ (รองรับภาษาไทย)
-    const categoryName = product.category?.name || 'เฟอร์นิเจอร์';
-    // const placeholderText = encodeURIComponent(categoryName);
+    // ลอจิกการเลือกรูปภาพแสดงผล:
+    // 1. หารูปที่เป็น is_primary
+    // 2. ถ้าไม่มี ให้เอารูปแรกใน array images
+    // 3. ถ้าไม่มีรูปเลย ให้ใช้ fallbackImage
+    const displayImage = product.images?.find(img => img.is_primary)?.image_path
+        || product.images?.[0]?.image_path;
+
+    // จัดการ Image Placeholder
     const placeholderText = "Modern Furniture";
     const fallbackImage = `https://placehold.co/600x750/F1F5F9/64748B?text=${placeholderText}`;
 
@@ -45,7 +39,7 @@ export default function ProductCard({ product }: { product: ProductProps }) {
                     className="relative block aspect-[4/5] overflow-hidden rounded-[2rem] bg-[#F1F5F9] transition-all duration-500 group-hover:shadow-2xl group-hover:shadow-slate-200/50"
                 >
                     <img
-                        src={product.image_url ? product.image_url : fallbackImage}
+                        src={displayImage || fallbackImage}
                         alt={product.name}
                         className="object-contain w-full h-full p-2 transition-transform duration-1000 group-hover:scale-110"
                         loading="lazy"
@@ -61,7 +55,7 @@ export default function ProductCard({ product }: { product: ProductProps }) {
                     </div>
                 </Link>
 
-                {/* ส่วนแสดงข้อมูล (นำราคาออกแล้ว) */}
+                {/* ส่วนแสดงข้อมูล */}
                 <div className="pt-6 px-2">
                     <div className="flex flex-col gap-1">
                         {/* ป้ายกำกับหมวดหมู่ */}
@@ -69,12 +63,12 @@ export default function ProductCard({ product }: { product: ProductProps }) {
                             {product.category?.name || 'Modern Collection'}
                         </p>
 
-                        {/* ชื่อสินค้าพร้อม Tooltip เพื่อให้อ่านภาษาไทยได้ครบถ้วน */}
+                        {/* ชื่อสินค้าพร้อม Tooltip */}
                         <div className="flex justify-between items-start gap-2">
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <Link href={productUrl} className="block cursor-pointer flex-grow">
-                                        <h3 className="font-semibold text-slate-800 text-lg leading-snug group-hover:text-purple-900 transition-colors duration-300 line-clamp-2">
+                                        <h3 className="font-semibold text-slate-800 text-lg leading-snug group-hover:text-primary transition-colors duration-300 line-clamp-2">
                                             {product.name}
                                         </h3>
                                     </Link>
@@ -88,17 +82,13 @@ export default function ProductCard({ product }: { product: ProductProps }) {
                                     <p className="text-sm font-medium">{product.name}</p>
                                 </TooltipContent>
                             </Tooltip>
+                        </div>
 
-                            {/* สถานะสต็อก (ใช้แทนตำแหน่งราคาเดิมเพื่อความสมดุลของ Layout) */}
-                            {/* <div className="shrink-0 pt-1">
-                                <span className={`text-[9px] font-extrabold px-2 py-1 rounded-full border ${
-                                    product.stock > 0
-                                    ? 'text-emerald-600 border-emerald-100 bg-emerald-50'
-                                    : 'text-slate-400 border-slate-100 bg-slate-50'
-                                }`}>
-                                    {product.stock > 0 ? 'AVAILABLE' : 'ORDER ONLY'}
-                                </span>
-                            </div> */}
+                        {/* แสดงราคา (ถ้าต้องการเปิดใช้งานในอนาคต) */}
+                        <div className="mt-1">
+                            <span className="text-sm font-bold text-slate-900">
+                                ฿{new Intl.NumberFormat('th-TH').format(product.price)}
+                            </span>
                         </div>
                     </div>
                 </div>
