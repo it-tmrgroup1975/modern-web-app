@@ -15,6 +15,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::resource('products', AdminProductController::class);
 
     Route::post('products/import', [AdminProductController::class, 'import'])->name('products.import');
+    Route::patch('products/{product}/images/{image}/set-main', [AdminProductController::class, 'setMainImage'])
+    ->name('products.images.set-main');
 });
 
 Route::get('/', function () {

@@ -69,34 +69,62 @@ class AdminProductController extends Controller
 
     public function update(Request $request, Product $product)
     {
+        // 1. Validation: รองรับหลายรูปภาพ
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
             'price' => 'required|numeric|min:0',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'stock' => 'required|integer|min:0',
+            'description' => 'required|string',
+            'images' => 'nullable|array',
+            'images.*' => 'image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
+
+        // ลบรูปภาพที่ถูกเลือกให้ลบ (ถ้ามีส่งมา)
+        if ($request->has('deleted_images')) {
+            $imagesToDelete = $product->images()->whereIn('id', $request->deleted_images)->get();
+            foreach ($imagesToDelete as $img) {
+                Storage::disk('public')->delete(str_replace('/storage/', '', $img->image_path));
+                $img->delete();
+            }
+        }
+
+        // บันทึกรูปใหม่ที่อัปโหลด (ถ้ามี)
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $file) {
+                $path = $file->store('products', 'public');
+                $product->images()->create(['image_path' => '/storage/' . $path]);
+            }
+        }
 
         $slug = $request->filled('slug') ? Str::slug($request->slug) : Str::slug($request->name);
 
-        if ($request->hasFile('image')) {
-            // ลบรูปภาพเก่าใน Storage
-            if ($product->image_url) {
-                Storage::disk('public')->delete(str_replace('/storage/', '', $product->image_url));
+        // 2. ใช้ Transaction เพื่อป้องกันข้อมูลพังกรณีอัปเดตล้มเหลว
+        \Illuminate\Support\Facades\DB::transaction(function () use ($request, $product, $validated, $slug) {
+
+            // อัปเดตข้อมูลทั่วไป
+            $product->update(array_merge($validated, ['slug' => $slug]));
+
+            // 3. ตรวจสอบว่ามีการอัปโหลดรูปภาพใหม่เข้ามาหรือไม่
+            if ($request->hasFile('images')) {
+                // ลบรูปภาพเก่าทั้งหมดออกจาก Storage และ Database
+                foreach ($product->images as $image) {
+                    $oldPath = str_replace('/storage/', '', $image->image_path);
+                    Storage::disk('public')->delete($oldPath);
+                }
+                $product->images()->delete();
+
+                // อัปโหลดและบันทึกรูปภาพใหม่
+                foreach ($request->file('images') as $index => $file) {
+                    $path = $file->store('products', 'public');
+                    $product->images()->create([
+                        'image_path' => '/storage/' . $path,
+                        'is_primary' => ($index === 0), // รูปแรกเป็นรูปหลัก
+                        'sort_order' => $index + 1
+                    ]);
+                }
             }
-
-            $path = $request->file('image')->store('products', 'public');
-            $validated['image_url'] = '/storage/' . $path;
-
-            // อัปเดตรูปหลักในตาราง product_images
-            $product->images()->where('is_primary', true)->delete();
-            $product->images()->create([
-                'image_path' => $validated['image_url'],
-                'is_primary' => true,
-                'sort_order' => 1
-            ]);
-        }
-
-        $product->update(array_merge($validated, ['slug' => $slug]));
+        });
 
         return back()->with('success', 'อัปเดตข้อมูลสินค้าและรูปภาพเรียบร้อยแล้ว');
     }
@@ -125,5 +153,19 @@ class AdminProductController extends Controller
         Excel::import(new ProductsImport, $request->file('file'));
 
         return back()->with('success', 'นำเข้าข้อมูลสินค้าและแกลเลอรีรูปภาพเรียบร้อยแล้ว');
+    }
+
+    public function setMainImage(Product $product, $imageId)
+    {
+        // ใช้ DB Transaction เพื่อความปลอดภัยของข้อมูล
+        \Illuminate\Support\Facades\DB::transaction(function () use ($product, $imageId) {
+            // 1. ถอดสถานะรูปหลักเดิมออกทั้งหมด
+            $product->images()->update(['is_primary' => false]);
+
+            // 2. ตั้งค่ารูปที่เลือกเป็นรูปหลัก
+            $product->images()->where('id', $imageId)->update(['is_primary' => true]);
+        });
+
+        return back()->with('success', 'เปลี่ยนรูปภาพหลักเรียบร้อยแล้ว');
     }
 }

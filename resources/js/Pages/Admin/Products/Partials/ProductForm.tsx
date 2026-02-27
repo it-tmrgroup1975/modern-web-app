@@ -1,6 +1,6 @@
 // resources/js/Pages/Admin/Products/Partials/ProductForm.tsx
 
-import { useForm } from '@inertiajs/react';
+import { useForm, router } from '@inertiajs/react';
 import { useState } from 'react';
 import { Input } from '@/Components/ui/input';
 import { Button } from '@/Components/ui/button';
@@ -17,9 +17,14 @@ import {
 import { ImageIcon, XCircle, Package, Info, Settings2 } from 'lucide-react';
 
 export default function ProductForm({ product, categories }: any) {
-    // ปรับ state ให้เก็บเป็น Array ของ URL สำหรับ Preview หลายรูป
-    const [previewUrls, setPreviewUrls] = useState<string[]>(
-        product?.images?.map((img: any) => img.image_path) || []
+    // ใช้ images เป็น State หลักสำหรับแสดงผลใน UI (Single Source of Truth)
+    const [images, setImages] = useState(
+        product?.images?.map((img: any) => ({
+            id: img.id,
+            url: img.image_path,
+            is_primary: !!img.is_primary,
+            is_new: false // ระบุว่าเป็นรูปเก่าใน DB
+        })) || []
     );
 
     const { data, setData, post, processing, errors, progress } = useForm({
@@ -37,89 +42,129 @@ export default function ProductForm({ product, categories }: any) {
             drawers: product?.attributes?.drawers || 0,
             max_height: product?.attributes?.max_height || 0,
         },
-        images: [] as File[], // เปลี่ยนจาก image เป็น images (Array)
+        images: [] as File[], // เก็บเฉพาะรูปใหม่ที่จะอัปโหลด
+        deleted_images: [] as number[], // เก็บ ID ของรูปเก่าที่จะลบ
     });
 
+    // ฟังก์ชันสั่งเปลี่ยนรูปหลัก
+    const setAsMain = (imageId: number) => {
+        router.patch(route('admin.products.images.set-main', [product.id, imageId]), {}, {
+            preserveScroll: true,
+            preserveState: true,
+        });
+    };
+
+    // จัดการเพิ่มรูปใหม่
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
         if (files.length > 0) {
-            setData('images', files);
-            setPreviewUrls(files.map(file => URL.createObjectURL(file)));
+            // เพิ่ม File ใหม่เข้าไปใน data.images
+            setData('images', [...(data.images as File[]), ...files]);
+
+            // อัปเดต UI State
+            const newPreviews = files.map(file => ({
+                id: null,
+                url: URL.createObjectURL(file),
+                is_primary: false,
+                is_new: true
+            }));
+            setImages(prev => [...prev, ...newPreviews]);
         }
     };
 
+    // จัดการลบรูป
     const removeImage = (index: number) => {
-        const newPreviews = previewUrls.filter((_, i) => i !== index);
-        const newFiles = (data.images as File[]).filter((_, i) => i !== index);
-        setPreviewUrls(newPreviews);
-        setData('images', newFiles);
+        const itemToRemove = images[index];
+
+        // 1. ถ้ามี ID (รูปเดิมใน DB) ให้บันทึก ID ไว้เพื่อลบที่ Backend
+        if (itemToRemove.id) {
+            setData('deleted_images', [...data.deleted_images, itemToRemove.id]);
+        }
+
+        // 2. ลบออกจาก UI State
+        const updatedImages = images.filter((_, i) => i !== index);
+        setImages(updatedImages);
+
+        // 3. ถ้าเป็นรูปใหม่ (is_new) ต้องลบออกจาก File list ด้วย
+        if (itemToRemove.is_new) {
+            // หา index ของไฟล์ใหม่ที่แท้จริงใน array data.images
+            const newImagesOnly = images.filter(img => img.is_new);
+            const indexInNewFiles = newImagesOnly.indexOf(itemToRemove);
+
+            const currentFiles = [...(data.images as File[])];
+            currentFiles.splice(indexInNewFiles, 1);
+            setData('images', currentFiles);
+        }
     };
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
         post(product ? route('admin.products.update', product.id) : route('admin.products.store'), {
             forceFormData: true,
+            preserveState: true,
         });
     };
 
     return (
         <form onSubmit={submit} className="space-y-8 animate-in fade-in duration-500">
-            {/* Section 1: รูปภาพสินค้า (รองรับหลายรูป) */}
+            {/* Section 1: รูปภาพสินค้า */}
             <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
                 <div className="flex items-center gap-2 mb-4 text-slate-800">
                     <ImageIcon className="w-5 h-5 text-purple-600" />
                     <h3 className="font-bold tracking-tight">สื่อและรูปภาพสินค้า</h3>
                 </div>
 
-                <div className="flex flex-col gap-6">
-                    {/* Grid Preview */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {previewUrls.map((url, index) => (
-                            <div key={index} className="group relative aspect-square bg-slate-100 border border-slate-200 rounded-2xl flex items-center justify-center overflow-hidden transition-all hover:shadow-md">
-                                <img src={url} className="object-cover w-full h-full" alt={`Preview ${index}`} />
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {images.map((img: any, index: number) => (
+                        <div key={img.id || index} className="group relative aspect-square bg-slate-100 border border-slate-200 rounded-2xl flex items-center justify-center overflow-hidden transition-all hover:shadow-md">
+                            <img src={img.url} className="object-cover w-full h-full" alt={`Preview ${index}`} />
 
-                                {/* ป้ายระบุรูปหลัก */}
-                                {index === 0 && (
-                                    <span className="absolute top-2 left-2 bg-purple-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
-                                        MAIN
-                                    </span>
-                                )}
+                            {img.is_primary && (
+                                <span className="absolute top-2 left-2 bg-purple-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                                    MAIN
+                                </span>
+                            )}
 
-                                {/* ปุ่มลบ */}
+                            {!img.is_primary && img.id && (
                                 <button
                                     type="button"
-                                    onClick={() => removeImage(index)}
-                                    className="absolute top-2 right-2 p-1 bg-white/90 backdrop-blur text-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 shadow-sm"
+                                    onClick={() => setAsMain(img.id)}
+                                    className="absolute bottom-2 left-2 bg-black/50 backdrop-blur text-white text-[10px] font-bold px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70 shadow-sm"
                                 >
-                                    <XCircle className="w-5 h-5" />
+                                    SET MAIN
                                 </button>
-                            </div>
-                        ))}
+                            )}
 
-                        {/* Box สำหรับอัปโหลดเพิ่ม */}
-                        <label className="relative aspect-square bg-white border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center text-slate-400 hover:border-purple-400 hover:bg-purple-50/50 transition-all cursor-pointer">
-                            <ImageIcon className="w-8 h-8 mb-2" />
-                            <span className="text-[10px] font-bold uppercase tracking-wider">Add Image</span>
-                            <Input
-                                type="file"
-                                multiple
-                                accept="image/*"
-                                onChange={handleImageChange}
-                                className="absolute inset-0 opacity-0 cursor-pointer"
-                            />
-                        </label>
-                    </div>
+                            <button
+                                type="button"
+                                onClick={() => removeImage(index)}
+                                className="absolute top-2 right-2 p-1 bg-white/90 backdrop-blur text-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 shadow-sm"
+                            >
+                                <XCircle className="w-5 h-5" />
+                            </button>
+                        </div>
+                    ))}
 
-                    <div className="w-full">
-                        <Label className="text-slate-600">จัดการรูปภาพสินค้า</Label>
-                        <p className="text-[11px] text-slate-400">อัปโหลดได้หลายรูป (รูปแรกจะถูกตั้งเป็นรูปหน้าปกอัตโนมัติ)</p>
-                        {errors.images && <p className="text-red-500 text-xs mt-1 animate-in slide-in-from-top-1">{errors.images}</p>}
-                        {progress && <Progress value={progress.percentage} className="h-1 mt-2" />}
-                    </div>
+                    <label className="relative aspect-square bg-white border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center text-slate-400 hover:border-purple-400 hover:bg-purple-50/50 transition-all cursor-pointer">
+                        <ImageIcon className="w-8 h-8 mb-2" />
+                        <span className="text-[10px] font-bold uppercase tracking-wider">Add Image</span>
+                        <Input
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            onChange={handleImageChange}
+                            className="absolute inset-0 opacity-0 cursor-pointer"
+                        />
+                    </label>
+                </div>
+
+                <div className="w-full mt-4">
+                    {errors.images && <p className="text-red-500 text-xs mt-1">{errors.images}</p>}
+                    {progress && <Progress value={progress.percentage} className="h-1 mt-2" />}
                 </div>
             </div>
 
-            {/* Section 2: ข้อมูลพื้นฐาน (PRESERVED) */}
+            {/* Section 2: ข้อมูลพื้นฐาน */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                     <div className="flex items-center gap-2 text-slate-800">
