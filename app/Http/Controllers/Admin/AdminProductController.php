@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Actions\CreateProductAction;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\Category;
@@ -43,29 +44,15 @@ class AdminProductController extends Controller
         ]);
     }
 
-    public function store(ProductRequest $request)
+    public function store(ProductRequest $request, CreateProductAction $action)
     {
-        $data = $request->validated();
-
-        // จัดการอัปโหลดรูปภาพหลัก (ถ้ามี)
-        if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('products', 'public');
-            $data['image_url'] = '/storage/' . $path;
-        }
-
-        $product = $this->productService->create($data);
-
-        // หากมีการอัปโหลดรูปภาพหลัก ให้บันทึกลงตาราง product_images ด้วยเป็นรูปแรก
-        if (isset($data['image_url'])) {
-            $product->images()->create([
-                'image_path' => $data['image_url'],
-                'is_primary' => true,
-                'sort_order' => 1
-            ]);
-        }
+        $action->execute(
+            $request->validated(),
+            $request->file('image')
+        );
 
         return redirect()->route('admin.products.index')
-            ->with('success', 'เพิ่มสินค้าและอัปโหลดรูปภาพเรียบร้อยแล้ว');
+            ->with('success', 'เพิ่มสินค้าเรียบร้อยแล้ว');
     }
 
     public function edit(Product $product)
@@ -95,7 +82,7 @@ class AdminProductController extends Controller
             }
 
             $path = $request->file('image')->store('products', 'public');
-            $validated['image_url'] = '/storage/'.$path;
+            $validated['image_url'] = '/storage/' . $path;
 
             // อัปเดตรูปหลักในตาราง product_images
             $product->images()->where('is_primary', true)->delete();

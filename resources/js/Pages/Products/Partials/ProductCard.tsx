@@ -85,11 +85,11 @@ export default function ProductCard({ product }: { product: Product }) {
                         </div>
 
                         {/* แสดงราคา (ถ้าต้องการเปิดใช้งานในอนาคต) */}
-                        <div className="mt-1">
+                        {/* <div className="mt-1">
                             <span className="text-sm font-bold text-slate-900">
                                 ฿{new Intl.NumberFormat('th-TH').format(product.price)}
                             </span>
-                        </div>
+                        </div> */}
                     </div>
                 </div>
             </Card>

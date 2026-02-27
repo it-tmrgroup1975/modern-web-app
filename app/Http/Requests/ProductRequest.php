@@ -23,19 +23,21 @@ class ProductRequest extends FormRequest
         return [
             'category_id' => 'required|exists:categories,id',
             'name' => 'required|string|max:255',
+            'sku' => 'required|string|max:50|unique:products,sku', // เพิ่มบรรทัดนี้
+            'slug' => 'required|string|max:255|unique:products,slug', // เพิ่มบรรทัดนี้
             'description' => 'required|string|min:10',
             'price' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
             'is_active' => 'boolean',
+            'attributes' => 'nullable|array',
 
             // กฎการจัดการรูปภาพ:
             // 1. ต้องเป็นไฟล์ภาพ (jpg, jpeg, png, webp)
             // 2. ขนาดไม่เกิน 2MB (2048 KB) เพื่อประหยัดพื้นที่เซิร์ฟเวอร์
-            // 3. เป็นแบบ nullable เพราะบางครั้งอาจแก้ไขข้อมูลโดยไม่เปลี่ยนรูป
             'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
 
+            // 3. เป็นแบบ nullable เพราะบางครั้งอาจแก้ไขข้อมูลโดยไม่เปลี่ยนรูป
             // รองรับการกรองคุณสมบัติสินค้า (JSON Attributes)
-            'attributes' => 'nullable|array',
             'attributes.material' => 'nullable|string',
             'attributes.drawers' => 'nullable|integer',
             'attributes.max_height' => 'nullable|numeric',

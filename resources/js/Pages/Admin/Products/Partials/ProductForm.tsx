@@ -6,29 +6,29 @@ import { Input } from '@/Components/ui/input';
 import { Button } from '@/Components/ui/button';
 import { Label } from '@/Components/ui/label';
 import { Progress } from '@/Components/ui/progress';
-import { Checkbox } from '@/Components/ui/checkbox'; //
+import { Checkbox } from '@/Components/ui/checkbox';
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue
-} from '@/Components/ui/select'; //
+} from '@/Components/ui/select';
 import { ImageIcon, XCircle, Package, Info, Settings2 } from 'lucide-react';
 
 export default function ProductForm({ product, categories }: any) {
-    // แก้ไข Logic การแสดงผล Preview: ถ้าเป็น blob ไม่ต้องต่อ storage
     const [previewUrl, setPreviewUrl] = useState<string | null>(product?.image_url || null);
 
     const { data, setData, post, processing, errors, progress } = useForm({
         _method: product ? 'put' : 'post',
         name: product?.name || '',
+        sku: product?.sku || '',           // เพิ่ม SKU
+        slug: product?.slug || '',         // เพิ่ม Slug
         category_id: String(product?.category_id || ''),
         price: product?.price || '',
         stock: product?.stock || '',
         description: product?.description || '',
         is_active: product ? Boolean(product.is_active) : true,
-        // จัดการ Attributes ตามโครงสร้าง JSON
         attributes: {
             material: product?.attributes?.material || 'Plastic PP',
             drawers: product?.attributes?.drawers || 0,
@@ -83,9 +83,9 @@ export default function ProductForm({ product, categories }: any) {
                     </div>
 
                     <div className="flex-grow space-y-3 w-full">
-                        <Label className="text-slate-600">เลือกรูปภาพสินค้า (แนะนำ .webp หรือ .png พื้นหลังโปร่งใส)</Label>
+                        <Label className="text-slate-600">เลือกรูปภาพสินค้า (แนะนำ .webp หรือ .png)</Label>
                         <Input type="file" accept="image/*" onChange={handleImageChange} className="rounded-xl border-slate-200" />
-                        <p className="text-[11px] text-slate-400">จำกัดขนาดไม่เกิน 2MB เพื่อความเร็วในการโหลด</p>
+                        <p className="text-[11px] text-slate-400">จำกัดขนาดไม่เกิน 2MB</p>
                         {errors.image && <p className="text-red-500 text-xs mt-1">{errors.image}</p>}
                         {progress && <Progress value={progress.percentage} className="h-1" />}
                     </div>
@@ -104,6 +104,20 @@ export default function ProductForm({ product, categories }: any) {
                         <Label>ชื่อสินค้า</Label>
                         <Input value={data.name} onChange={e => setData('name', e.target.value)} placeholder="เช่น ตู้ลิ้นชัก Modern-01" className="rounded-xl" />
                         {errors.name && <p className="text-red-500 text-xs">{errors.name}</p>}
+                    </div>
+
+                    {/* เพิ่มฟิลด์ SKU และ Slug */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label>SKU (รหัสสินค้า)</Label>
+                            <Input value={data.sku} onChange={e => setData('sku', e.target.value)} placeholder="PROD-001" className="rounded-xl" />
+                            {errors.sku && <p className="text-red-500 text-xs">{errors.sku}</p>}
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Slug (URL)</Label>
+                            <Input value={data.slug} onChange={e => setData('slug', e.target.value)} placeholder="prod-001" className="rounded-xl" />
+                            {errors.slug && <p className="text-red-500 text-xs">{errors.slug}</p>}
+                        </div>
                     </div>
 
                     <div className="space-y-2">
@@ -138,24 +152,21 @@ export default function ProductForm({ product, categories }: any) {
                             <Input type="number" value={data.stock} onChange={e => setData('stock', e.target.value)} className="rounded-xl" />
                         </div>
                     </div>
-                    {(errors.price || errors.stock) && <p className="text-red-500 text-xs">กรุณาตรวจสอบราคาและจำนวนสต็อก</p>}
+                    {(errors.price || errors.stock) && <p className="text-red-500 text-xs">ตรวจสอบข้อมูลราคา/สต็อก</p>}
 
                     <div className="flex items-center space-x-2 pt-4">
                         <Checkbox id="active" checked={data.is_active} onCheckedChange={(val: boolean) => setData('is_active', val)} />
-                        <Label htmlFor="active" className="text-sm font-medium leading-none cursor-pointer">
-                            เปิดแสดงผลบนเว็บไซต์ (Public Access)
-                        </Label>
+                        <Label htmlFor="active" className="text-sm font-medium cursor-pointer">เปิดแสดงผลบนเว็บไซต์</Label>
                     </div>
                 </div>
             </div>
 
-            {/* Section 3: คุณสมบัติพิเศษ (Attributes JSON) */}
+            {/* Section 3: ข้อมูลทางเทคนิค */}
             <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
                 <div className="flex items-center gap-2 text-slate-800">
                     <Settings2 className="w-4 h-4 text-orange-600" />
-                    <h3 className="font-bold tracking-tight">รายละเอียดทางเทคนิค (Attributes)</h3>
+                    <h3 className="font-bold tracking-tight">รายละเอียดทางเทคนิค</h3>
                 </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
                         <Label>วัสดุ</Label>
@@ -178,13 +189,11 @@ export default function ProductForm({ product, categories }: any) {
                     value={data.description}
                     onChange={e => setData('description', e.target.value)}
                     className="w-full min-h-[120px] p-4 rounded-2xl border border-slate-200 focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all"
-                    placeholder="ระบุจุดเด่นของเฟอร์นิเจอร์ชิ้นนี้..."
                 />
-                {errors.description && <p className="text-red-500 text-xs">{errors.description}</p>}
             </div>
 
             <div className="flex gap-4 pt-4">
-                <Button type="submit" disabled={processing} className="flex-grow h-14 rounded-2xl bg-purple-900 hover:bg-purple-800 text-lg font-bold shadow-lg shadow-purple-200 transition-all">
+                <Button type="submit" disabled={processing} className="flex-grow h-14 rounded-2xl bg-purple-900 hover:bg-purple-800 text-lg font-bold shadow-lg transition-all">
                     {processing ? 'กำลังดำเนินการ...' : (product ? 'อัปเดตข้อมูลสินค้า' : 'ยืนยันการเพิ่มสินค้า')}
                 </Button>
             </div>

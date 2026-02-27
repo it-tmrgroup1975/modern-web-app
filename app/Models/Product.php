@@ -13,16 +13,15 @@ class Product extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'category_id',
         'name',
-        'sku',
-        'slug',
-        'description',
+        'sku',    // ตรวจสอบว่ามีบรรทัดนี้
+        'slug',   // ตรวจสอบว่ามีบรรทัดนี้
+        'category_id',
         'price',
-        'image_url', // ยังคงไว้เพื่อความ Compatible หรือใช้เก็บรูปสำรอง
-        'attributes',
         'stock',
-        'is_active'
+        'is_active',
+        'description',
+        'attributes', // หากเก็บเป็น JSON ต้องตรวจสอบว่ามี $casts เป็น 'array' ด้วย
     ];
 
     public function category(): BelongsTo
@@ -41,5 +40,6 @@ class Product extends Model
 
     protected $casts = [
         'attributes' => 'array',
+        'is_active' => 'boolean',
     ];
 }
