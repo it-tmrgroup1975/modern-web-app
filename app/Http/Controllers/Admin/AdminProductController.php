@@ -9,6 +9,7 @@ use App\Models\Category;
 use App\Services\ProductService;
 use App\Http\Requests\ProductRequest;
 use App\Actions\GetCatalogProducts;
+use App\Exports\ProductsExport;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
 use App\Imports\ProductsImport;
@@ -153,6 +154,17 @@ class AdminProductController extends Controller
         Excel::import(new ProductsImport, $request->file('file'));
 
         return back()->with('success', 'นำเข้าข้อมูลสินค้าและแกลเลอรีรูปภาพเรียบร้อยแล้ว');
+    }
+
+    public function export(Request $request)
+    {
+        // รับค่า categories ที่เลือกมาจาก Request (เช่น ?categories[]=1&categories[]=2)
+        $categoryIds = $request->input('categories', []);
+
+        return Excel::download(
+            new ProductsExport($categoryIds),
+            'products_export_' . date('Ymd_His') . '.xlsx'
+        );
     }
 
     public function setMainImage(Product $product, $imageId)

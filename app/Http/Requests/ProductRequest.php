@@ -42,6 +42,7 @@ class ProductRequest extends FormRequest
             'attributes.material' => 'nullable|string',
             'attributes.drawers' => 'nullable|integer',
             'attributes.max_height' => 'nullable|numeric',
+            'attributes.color' => 'nullable|string|max:50',
         ];
     }
 

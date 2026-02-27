@@ -28,8 +28,8 @@ export default function ProductImportModal() {
     return (
         <Dialog onOpenChange={() => reset()}>
             <DialogTrigger asChild>
-                <Button variant="outline" className="rounded-2xl border-slate-200">
-                    <FileUp className="w-4 h-4 mr-2 text-slate-500" /> Import
+                <Button variant="outline" className="bg-blue-500 text-white rounded-2xl border-slate-200 hover:bg-primary hover:text-white">
+                    <FileUp className="w-4 h-4 mr-2 text-white" /> Import
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px] rounded-[2rem]">

@@ -12,7 +12,7 @@ import {
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
     Plus, Pencil, Trash2, Search,
-    Filter, Package
+    Filter, Package, Download
 } from 'lucide-react';
 import { useDebounce } from '@/Hooks/useDebounce';
 import ProductImportModal from './Partials/ProductImportModal';
@@ -33,6 +33,16 @@ export default function Index({ auth, products, categories, filters = {} }: any)
             { search: search, category: value === 'all' ? '' : value },
             { preserveState: true }
         );
+    };
+
+    // ลอจิกสำหรับ Export ข้อมูล
+    const handleExport = () => {
+        const queryParams = new URLSearchParams({
+            search: search,
+            category: filters.category || ''
+        });
+        // ส่งไปยัง Route export ที่เรากำหนดไว้
+        window.location.href = route('admin.products.export') + '?' + queryParams.toString();
     };
 
     const handleDelete = (id: number) => {
@@ -60,6 +70,14 @@ export default function Index({ auth, products, categories, filters = {} }: any)
                         <p className="text-slate-500 text-sm">จัดการรายการสินค้าและสต็อกของโรงงาน</p>
                     </div>
                     <div className="flex items-center gap-3">
+                        <Button
+                            variant="outline"
+                            onClick={handleExport}
+                            className="bg-red-600 text-white rounded-2xl gap-2 border-slate-200 hover:bg-primary hover:text-white"
+                        >
+                            <Download className="w-4 h-4" /> Export
+                        </Button>
+
                         <ProductImportModal />
 
                         <Link href={route('admin.products.create')}>
@@ -178,7 +196,6 @@ export default function Index({ auth, products, categories, filters = {} }: any)
                     </CardContent>
                 </Card>
 
-                {/* ส่วนของ Pagination ที่แก้ไขแล้ว */}
                 <div className="flex flex-col md:flex-row items-center justify-between gap-4 px-2">
                     <p className="text-sm text-slate-400 font-medium">
                         Showing {products.from} to {products.to} of {products.total} products
@@ -192,8 +209,8 @@ export default function Index({ auth, products, categories, filters = {} }: any)
                                 preserveState
                                 className={`px-4 py-2 rounded-xl flex items-center justify-center min-w-[40px] h-10 transition-colors
                                     ${link.active
-                                        ? 'bg-purple-900 text-white'
-                                        : 'bg-white text-slate-600 hover:bg-slate-100'
+                                        ? 'bg-purple-900 text-white font-bold'
+                                        : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
                                     }
                                     ${!link.url ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}
                                 `}
