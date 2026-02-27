@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import { Button } from '@/Components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
+import { Card, CardContent } from '@/Components/ui/card';
 import { Input } from '@/Components/ui/input';
 import { Badge } from '@/Components/ui/badge';
 import {
@@ -11,8 +11,8 @@ import {
 } from '@/Components/ui/select';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
-    Plus, Pencil, Trash2, FileUp, Search,
-    Filter, ChevronLeft, ChevronRight, Package
+    Plus, Pencil, Trash2, Search,
+    Filter, Package
 } from 'lucide-react';
 import { useDebounce } from '@/Hooks/useDebounce';
 import ProductImportModal from './Partials/ProductImportModal';
@@ -41,6 +41,15 @@ export default function Index({ auth, products, categories, filters = {} }: any)
         }
     };
 
+    // Helper Function สำหรับหา URL รูปภาพหลักจาก Array ของ images
+    const getProductImageUrl = (product: any) => {
+        if (product.images && product.images.length > 0) {
+            const primary = product.images.find((img: any) => img.is_primary) || product.images[0];
+            return primary.image_path;
+        }
+        return product.image_url || `https://placehold.co/100?text=${product.name[0]}`;
+    };
+
     return (
         <AuthenticatedLayout >
             <Head title="คลังสินค้า - Modern Furniture" />
@@ -52,9 +61,8 @@ export default function Index({ auth, products, categories, filters = {} }: any)
                         <p className="text-slate-500 text-sm">จัดการรายการสินค้าและสต็อกของโรงงาน</p>
                     </div>
                     <div className="flex items-center gap-3">
-                        {/* เรียกใช้ Component ที่แยกออกมา */}
                         <ProductImportModal />
-                        
+
                         <Link href={route('admin.products.create')}>
                             <Button className="rounded-2xl bg-purple-900 hover:bg-purple-800 shadow-lg shadow-purple-200">
                                 <Plus className="w-4 h-4 mr-2" /> New Product
@@ -82,7 +90,6 @@ export default function Index({ auth, products, categories, filters = {} }: any)
                                 </SelectTrigger>
                                 <SelectContent className="rounded-2xl border-none shadow-xl">
                                     <SelectItem value="all">หมวดหมู่ทั้งหมด</SelectItem>
-                                    {/* แก้ไขจุดนี้: ตรวจสอบ slug ว่าไม่ใช่ค่าว่างก่อน Render */}
                                     {categories.map((cat: any) => (
                                         cat.slug && (
                                             <SelectItem key={cat.id} value={cat.slug}>
@@ -117,8 +124,8 @@ export default function Index({ auth, products, categories, filters = {} }: any)
                                                 <div className="flex items-center gap-4">
                                                     <div className="w-12 h-12 rounded-2xl bg-slate-100 flex-shrink-0 overflow-hidden border border-slate-100">
                                                         <img
-                                                            /* แก้ไขจุดนี้: เรียกใช้ URL โดยตรงเนื่องจาก Controller ใส่ /storage/ มาให้แล้ว */
-                                                            src={product.image_url || `https://placehold.co/100?text=${product.name[0]}`}
+                                                            // เรียกใช้ Helper Function เพื่อดึงรูปหลัก
+                                                            src={getProductImageUrl(product)}
                                                             className="w-full h-full object-contain p-1"
                                                             alt={product.name}
                                                         />

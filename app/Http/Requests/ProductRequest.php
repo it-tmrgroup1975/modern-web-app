@@ -34,7 +34,8 @@ class ProductRequest extends FormRequest
             // กฎการจัดการรูปภาพ:
             // 1. ต้องเป็นไฟล์ภาพ (jpg, jpeg, png, webp)
             // 2. ขนาดไม่เกิน 2MB (2048 KB) เพื่อประหยัดพื้นที่เซิร์ฟเวอร์
-            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'images' => 'nullable|array',
+            'images.*' => 'image|mimes:jpg,jpeg,png,webp|max:2048',
 
             // 3. เป็นแบบ nullable เพราะบางครั้งอาจแก้ไขข้อมูลโดยไม่เปลี่ยนรูป
             // รองรับการกรองคุณสมบัติสินค้า (JSON Attributes)

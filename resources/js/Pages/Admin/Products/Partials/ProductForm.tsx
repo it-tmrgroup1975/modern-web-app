@@ -17,13 +17,16 @@ import {
 import { ImageIcon, XCircle, Package, Info, Settings2 } from 'lucide-react';
 
 export default function ProductForm({ product, categories }: any) {
-    const [previewUrl, setPreviewUrl] = useState<string | null>(product?.image_url || null);
+    // ปรับ state ให้เก็บเป็น Array ของ URL สำหรับ Preview หลายรูป
+    const [previewUrls, setPreviewUrls] = useState<string[]>(
+        product?.images?.map((img: any) => img.image_path) || []
+    );
 
     const { data, setData, post, processing, errors, progress } = useForm({
         _method: product ? 'put' : 'post',
         name: product?.name || '',
-        sku: product?.sku || '',           // เพิ่ม SKU
-        slug: product?.slug || '',         // เพิ่ม Slug
+        sku: product?.sku || '',
+        slug: product?.slug || '',
         category_id: String(product?.category_id || ''),
         price: product?.price || '',
         stock: product?.stock || '',
@@ -34,15 +37,22 @@ export default function ProductForm({ product, categories }: any) {
             drawers: product?.attributes?.drawers || 0,
             max_height: product?.attributes?.max_height || 0,
         },
-        image: null as File | null,
+        images: [] as File[], // เปลี่ยนจาก image เป็น images (Array)
     });
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setData('image', file);
-            setPreviewUrl(URL.createObjectURL(file));
+        const files = Array.from(e.target.files || []);
+        if (files.length > 0) {
+            setData('images', files);
+            setPreviewUrls(files.map(file => URL.createObjectURL(file)));
         }
+    };
+
+    const removeImage = (index: number) => {
+        const newPreviews = previewUrls.filter((_, i) => i !== index);
+        const newFiles = (data.images as File[]).filter((_, i) => i !== index);
+        setPreviewUrls(newPreviews);
+        setData('images', newFiles);
     };
 
     const submit = (e: React.FormEvent) => {
@@ -54,45 +64,62 @@ export default function ProductForm({ product, categories }: any) {
 
     return (
         <form onSubmit={submit} className="space-y-8 animate-in fade-in duration-500">
-            {/* Section 1: รูปภาพสินค้า */}
+            {/* Section 1: รูปภาพสินค้า (รองรับหลายรูป) */}
             <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
                 <div className="flex items-center gap-2 mb-4 text-slate-800">
                     <ImageIcon className="w-5 h-5 text-purple-600" />
-                    <h3 className="font-bold tracking-tight">สื่อและรูปภาพ</h3>
+                    <h3 className="font-bold tracking-tight">สื่อและรูปภาพสินค้า</h3>
                 </div>
 
-                <div className="flex flex-col md:flex-row gap-6 items-start">
-                    <div className="relative w-full md:w-48 aspect-square bg-white border-2 border-dashed border-slate-200 rounded-[2rem] flex items-center justify-center overflow-hidden transition-all hover:border-purple-300">
-                        {previewUrl ? (
-                            <>
-                                <img src={previewUrl} className="object-contain w-full h-full p-4" alt="Preview" />
+                <div className="flex flex-col gap-6">
+                    {/* Grid Preview */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {previewUrls.map((url, index) => (
+                            <div key={index} className="group relative aspect-square bg-slate-100 border border-slate-200 rounded-2xl flex items-center justify-center overflow-hidden transition-all hover:shadow-md">
+                                <img src={url} className="object-cover w-full h-full" alt={`Preview ${index}`} />
+
+                                {/* ป้ายระบุรูปหลัก */}
+                                {index === 0 && (
+                                    <span className="absolute top-2 left-2 bg-purple-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                                        MAIN
+                                    </span>
+                                )}
+
+                                {/* ปุ่มลบ */}
                                 <button
                                     type="button"
-                                    onClick={() => { setPreviewUrl(null); setData('image', null); }}
-                                    className="absolute top-2 right-2 p-1 bg-white/80 backdrop-blur shadow-sm text-red-500 rounded-full hover:bg-red-50 transition-colors"
+                                    onClick={() => removeImage(index)}
+                                    className="absolute top-2 right-2 p-1 bg-white/90 backdrop-blur text-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 shadow-sm"
                                 >
                                     <XCircle className="w-5 h-5" />
                                 </button>
-                            </>
-                        ) : (
-                            <div className="text-center">
-                                <ImageIcon className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-                                <span className="text-[10px] text-slate-400 font-medium">No Image</span>
                             </div>
-                        )}
+                        ))}
+
+                        {/* Box สำหรับอัปโหลดเพิ่ม */}
+                        <label className="relative aspect-square bg-white border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center text-slate-400 hover:border-purple-400 hover:bg-purple-50/50 transition-all cursor-pointer">
+                            <ImageIcon className="w-8 h-8 mb-2" />
+                            <span className="text-[10px] font-bold uppercase tracking-wider">Add Image</span>
+                            <Input
+                                type="file"
+                                multiple
+                                accept="image/*"
+                                onChange={handleImageChange}
+                                className="absolute inset-0 opacity-0 cursor-pointer"
+                            />
+                        </label>
                     </div>
 
-                    <div className="flex-grow space-y-3 w-full">
-                        <Label className="text-slate-600">เลือกรูปภาพสินค้า (แนะนำ .webp หรือ .png)</Label>
-                        <Input type="file" accept="image/*" onChange={handleImageChange} className="rounded-xl border-slate-200" />
-                        <p className="text-[11px] text-slate-400">จำกัดขนาดไม่เกิน 2MB</p>
-                        {errors.image && <p className="text-red-500 text-xs mt-1">{errors.image}</p>}
-                        {progress && <Progress value={progress.percentage} className="h-1" />}
+                    <div className="w-full">
+                        <Label className="text-slate-600">จัดการรูปภาพสินค้า</Label>
+                        <p className="text-[11px] text-slate-400">อัปโหลดได้หลายรูป (รูปแรกจะถูกตั้งเป็นรูปหน้าปกอัตโนมัติ)</p>
+                        {errors.images && <p className="text-red-500 text-xs mt-1 animate-in slide-in-from-top-1">{errors.images}</p>}
+                        {progress && <Progress value={progress.percentage} className="h-1 mt-2" />}
                     </div>
                 </div>
             </div>
 
-            {/* Section 2: ข้อมูลพื้นฐาน */}
+            {/* Section 2: ข้อมูลพื้นฐาน (PRESERVED) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                     <div className="flex items-center gap-2 text-slate-800">
@@ -106,7 +133,6 @@ export default function ProductForm({ product, categories }: any) {
                         {errors.name && <p className="text-red-500 text-xs">{errors.name}</p>}
                     </div>
 
-                    {/* เพิ่มฟิลด์ SKU และ Slug */}
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label>SKU (รหัสสินค้า)</Label>
@@ -170,15 +196,15 @@ export default function ProductForm({ product, categories }: any) {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
                         <Label>วัสดุ</Label>
-                        <Input value={data.attributes.material} onChange={e => setData('attributes', {...data.attributes, material: e.target.value})} className="rounded-xl" />
+                        <Input value={data.attributes.material} onChange={e => setData('attributes', { ...data.attributes, material: e.target.value })} className="rounded-xl" />
                     </div>
                     <div className="space-y-2">
                         <Label>จำนวนลิ้นชัก</Label>
-                        <Input type="number" value={data.attributes.drawers} onChange={e => setData('attributes', {...data.attributes, drawers: parseInt(e.target.value)})} className="rounded-xl" />
+                        <Input type="number" value={data.attributes.drawers} onChange={e => setData('attributes', { ...data.attributes, drawers: parseInt(e.target.value) })} className="rounded-xl" />
                     </div>
                     <div className="space-y-2">
                         <Label>ความสูงรวม (ซม.)</Label>
-                        <Input type="number" value={data.attributes.max_height} onChange={e => setData('attributes', {...data.attributes, max_height: parseFloat(e.target.value)})} className="rounded-xl" />
+                        <Input type="number" value={data.attributes.max_height} onChange={e => setData('attributes', { ...data.attributes, max_height: parseFloat(e.target.value) })} className="rounded-xl" />
                     </div>
                 </div>
             </div>

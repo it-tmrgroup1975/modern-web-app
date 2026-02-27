@@ -46,13 +46,16 @@ class AdminProductController extends Controller
 
     public function store(ProductRequest $request, CreateProductAction $action)
     {
+        // รับไฟล์ทั้งหมดที่อัปโหลด (ถ้ามี)
+        $images = $request->file('images') ?? [];
+
         $action->execute(
             $request->validated(),
-            $request->file('image')
+            $images
         );
 
         return redirect()->route('admin.products.index')
-            ->with('success', 'เพิ่มสินค้าเรียบร้อยแล้ว');
+            ->with('success', 'เพิ่มสินค้าพร้อมรูปภาพเรียบร้อยแล้ว');
     }
 
     public function edit(Product $product)
