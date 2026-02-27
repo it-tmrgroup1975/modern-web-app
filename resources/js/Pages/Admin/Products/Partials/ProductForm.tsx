@@ -17,7 +17,7 @@ import {
 import { ImageIcon, XCircle, Package, Info, Settings2 } from 'lucide-react';
 
 export default function ProductForm({ product, categories }: any) {
-    // ใช้ images เป็น State หลักสำหรับแสดงผลใน UI (Single Source of Truth)
+    // 1. State หลักสำหรับจัดการรูปภาพ (รูปเดิมจาก DB + รูปใหม่ที่อัปโหลด)
     const [images, setImages] = useState(
         product?.images?.map((img: any) => ({
             id: img.id,
@@ -42,8 +42,8 @@ export default function ProductForm({ product, categories }: any) {
             drawers: product?.attributes?.drawers || 0,
             max_height: product?.attributes?.max_height || 0,
         },
-        images: [] as File[], // เก็บเฉพาะรูปใหม่ที่จะอัปโหลด
-        deleted_images: [] as number[], // เก็บ ID ของรูปเก่าที่จะลบ
+        images: [] as File[],
+        deleted_images: [] as number[], // เก็บ ID รูปที่จะลบออกจาก DB
     });
 
     // ฟังก์ชันสั่งเปลี่ยนรูปหลัก
@@ -54,15 +54,27 @@ export default function ProductForm({ product, categories }: any) {
         });
     };
 
-    // จัดการเพิ่มรูปใหม่
+    // จัดการเพิ่มรูปใหม่ พร้อมตรวจสอบ Limit 5 รูป
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
-        if (files.length > 0) {
-            // เพิ่ม File ใหม่เข้าไปใน data.images
-            setData('images', [...(data.images as File[]), ...files]);
+
+        // ตรวจสอบจำนวนรูปคงเหลือที่อนุญาตให้เพิ่มได้ (สูงสุด 5)
+        const remainingSlots = 5 - images.length;
+
+        if (remainingSlots <= 0) {
+            alert("คุณสามารถอัปโหลดรูปภาพได้สูงสุด 5 รูปเท่านั้นครับ");
+            return;
+        }
+
+        // คัดเลือกเฉพาะไฟล์ที่อยู่ในจำนวนที่เหลือ
+        const filesToAdd = files.slice(0, remainingSlots);
+
+        if (filesToAdd.length > 0) {
+            // อัปเดต File list ของ form
+            setData('images', [...(data.images as File[]), ...filesToAdd]);
 
             // อัปเดต UI State
-            const newPreviews = files.map(file => ({
+            const newPreviews = filesToAdd.map(file => ({
                 id: null,
                 url: URL.createObjectURL(file),
                 is_primary: false,
@@ -87,7 +99,6 @@ export default function ProductForm({ product, categories }: any) {
 
         // 3. ถ้าเป็นรูปใหม่ (is_new) ต้องลบออกจาก File list ด้วย
         if (itemToRemove.is_new) {
-            // หา index ของไฟล์ใหม่ที่แท้จริงใน array data.images
             const newImagesOnly = images.filter(img => img.is_new);
             const indexInNewFiles = newImagesOnly.indexOf(itemToRemove);
 
@@ -111,7 +122,7 @@ export default function ProductForm({ product, categories }: any) {
             <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
                 <div className="flex items-center gap-2 mb-4 text-slate-800">
                     <ImageIcon className="w-5 h-5 text-purple-600" />
-                    <h3 className="font-bold tracking-tight">สื่อและรูปภาพสินค้า</h3>
+                    <h3 className="font-bold tracking-tight">สื่อและรูปภาพสินค้า ({images.length}/5)</h3>
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -145,17 +156,20 @@ export default function ProductForm({ product, categories }: any) {
                         </div>
                     ))}
 
-                    <label className="relative aspect-square bg-white border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center text-slate-400 hover:border-purple-400 hover:bg-purple-50/50 transition-all cursor-pointer">
-                        <ImageIcon className="w-8 h-8 mb-2" />
-                        <span className="text-[10px] font-bold uppercase tracking-wider">Add Image</span>
-                        <Input
-                            type="file"
-                            multiple
-                            accept="image/*"
-                            onChange={handleImageChange}
-                            className="absolute inset-0 opacity-0 cursor-pointer"
-                        />
-                    </label>
+                    {/* แสดงปุ่ม Add Image เฉพาะเมื่อรูปไม่ครบ 5 รูป */}
+                    {images.length < 5 && (
+                        <label className="relative aspect-square bg-white border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center text-slate-400 hover:border-purple-400 hover:bg-purple-50/50 transition-all cursor-pointer">
+                            <ImageIcon className="w-8 h-8 mb-2" />
+                            <span className="text-[10px] font-bold uppercase tracking-wider">Add Image</span>
+                            <Input
+                                type="file"
+                                multiple
+                                accept="image/*"
+                                onChange={handleImageChange}
+                                className="absolute inset-0 opacity-0 cursor-pointer"
+                            />
+                        </label>
+                    )}
                 </div>
 
                 <div className="w-full mt-4">
@@ -164,7 +178,7 @@ export default function ProductForm({ product, categories }: any) {
                 </div>
             </div>
 
-            {/* Section 2: ข้อมูลพื้นฐาน */}
+            {/* ส่วนของฟอร์มอื่นๆ (ข้อมูลพื้นฐาน, ราคา, ข้อมูลเทคนิค, คำอธิบาย) คงเดิม */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                     <div className="flex items-center gap-2 text-slate-800">
@@ -232,7 +246,6 @@ export default function ProductForm({ product, categories }: any) {
                 </div>
             </div>
 
-            {/* Section 3: ข้อมูลทางเทคนิค */}
             <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
                 <div className="flex items-center gap-2 text-slate-800">
                     <Settings2 className="w-4 h-4 text-orange-600" />
