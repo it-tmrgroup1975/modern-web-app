@@ -48,7 +48,7 @@ class ExportProductTemplate implements FromArray, WithHeadings, WithStyles, Shou
                 '1250.00',
                 '50',
                 // ตัวอย่างการใส่หลายรูปภาพโดยแยกด้วย Comma
-                'products/modern-01-main.jpg, products/modern-01-side.jpg, products/modern-01-inside.jpg',
+                'storage/products/modern-01-main.jpg, storage/products/modern-01-side.jpg, storage/products/modern-01-inside.jpg',
                 'White',
                 'High-Grade Polypropylene',
                 '60x40x120 cm',
@@ -61,7 +61,7 @@ class ExportProductTemplate implements FromArray, WithHeadings, WithStyles, Shou
                 'เก้าอี้พลาสติกดีไซน์มินิมอล แข็งแรง รับน้ำหนักได้ถึง 100 กก.',
                 '350.00',
                 '100',
-                'products/k5-green-1.webp, products/k5-green-2.webp',
+                'storage/products/k5-green-1.webp, storage/products/k5-green-2.webp',
                 'Green',
                 'PP Plastic',
                 '45x45x85 cm',
