@@ -41,7 +41,6 @@ export default function Index({ auth, products, categories, filters = {} }: any)
         }
     };
 
-    // Helper Function สำหรับหา URL รูปภาพหลักจาก Array ของ images
     const getProductImageUrl = (product: any) => {
         if (product.images && product.images.length > 0) {
             const primary = product.images.find((img: any) => img.is_primary) || product.images[0];
@@ -124,7 +123,6 @@ export default function Index({ auth, products, categories, filters = {} }: any)
                                                 <div className="flex items-center gap-4">
                                                     <div className="w-12 h-12 rounded-2xl bg-slate-100 flex-shrink-0 overflow-hidden border border-slate-100">
                                                         <img
-                                                            // เรียกใช้ Helper Function เพื่อดึงรูปหลัก
                                                             src={getProductImageUrl(product)}
                                                             className="w-full h-full object-contain p-1"
                                                             alt={product.name}
@@ -180,19 +178,25 @@ export default function Index({ auth, products, categories, filters = {} }: any)
                     </CardContent>
                 </Card>
 
+                {/* ส่วนของ Pagination ที่แก้ไขแล้ว */}
                 <div className="flex flex-col md:flex-row items-center justify-between gap-4 px-2">
                     <p className="text-sm text-slate-400 font-medium">
                         Showing {products.from} to {products.to} of {products.total} products
                     </p>
                     <div className="flex gap-2">
                         {products.links.map((link: any, index: number) => (
-                            <Button
+                            <Link
                                 key={index}
-                                variant={link.active ? 'default' : 'outline'}
-                                disabled={!link.url}
-                                onClick={() => link.url && router.get(link.url)}
-                                className={`rounded-xl min-w-[40px] h-10 border-none shadow-none ${link.active ? 'bg-purple-900 hover:bg-purple-800 text-white' : 'bg-white hover:bg-slate-100 text-slate-600'
-                                    }`}
+                                href={link.url || '#'}
+                                preserveScroll
+                                preserveState
+                                className={`px-4 py-2 rounded-xl flex items-center justify-center min-w-[40px] h-10 transition-colors
+                                    ${link.active
+                                        ? 'bg-purple-900 text-white'
+                                        : 'bg-white text-slate-600 hover:bg-slate-100'
+                                    }
+                                    ${!link.url ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}
+                                `}
                                 dangerouslySetInnerHTML={{ __html: link.label }}
                             />
                         ))}

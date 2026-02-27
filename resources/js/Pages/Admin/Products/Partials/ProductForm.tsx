@@ -1,7 +1,7 @@
 // resources/js/Pages/Admin/Products/Partials/ProductForm.tsx
 
 import { useForm, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useState, ChangeEvent, FormEvent } from 'react';
 import { Input } from '@/Components/ui/input';
 import { Button } from '@/Components/ui/button';
 import { Label } from '@/Components/ui/label';
@@ -16,14 +16,22 @@ import {
 } from '@/Components/ui/select';
 import { ImageIcon, XCircle, Package, Info, Settings2 } from 'lucide-react';
 
+// กำหนด Type ของรูปภาพเพื่อป้องกัน TS7006
+interface ProductImage {
+    id: number | null;
+    url: string;
+    is_primary: boolean;
+    is_new: boolean;
+}
+
 export default function ProductForm({ product, categories }: any) {
-    // 1. State หลักสำหรับจัดการรูปภาพ (รูปเดิมจาก DB + รูปใหม่ที่อัปโหลด)
-    const [images, setImages] = useState(
+    // 1. State หลักสำหรับแสดงผลใน UI
+    const [images, setImages] = useState<ProductImage[]>(
         product?.images?.map((img: any) => ({
             id: img.id,
             url: img.image_path,
             is_primary: !!img.is_primary,
-            is_new: false // ระบุว่าเป็นรูปเก่าใน DB
+            is_new: false
         })) || []
     );
 
@@ -43,7 +51,7 @@ export default function ProductForm({ product, categories }: any) {
             max_height: product?.attributes?.max_height || 0,
         },
         images: [] as File[],
-        deleted_images: [] as number[], // เก็บ ID รูปที่จะลบออกจาก DB
+        deleted_images: [] as number[],
     });
 
     // ฟังก์ชันสั่งเปลี่ยนรูปหลัก
@@ -54,19 +62,19 @@ export default function ProductForm({ product, categories }: any) {
         });
     };
 
-    // จัดการเพิ่มรูปใหม่ พร้อมตรวจสอบ Limit 5 รูป
-    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // จัดการเพิ่มรูปใหม่
+    const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
 
-        // ตรวจสอบจำนวนรูปคงเหลือที่อนุญาตให้เพิ่มได้ (สูงสุด 5)
-        const remainingSlots = 5 - images.length;
+        // ตรวจสอบจำนวนรูปคงเหลือ (สูงสุด 5 รูป)
+        const currentCount = images.length;
+        const remainingSlots = 5 - currentCount;
 
         if (remainingSlots <= 0) {
             alert("คุณสามารถอัปโหลดรูปภาพได้สูงสุด 5 รูปเท่านั้นครับ");
             return;
         }
 
-        // คัดเลือกเฉพาะไฟล์ที่อยู่ในจำนวนที่เหลือ
         const filesToAdd = files.slice(0, remainingSlots);
 
         if (filesToAdd.length > 0) {
@@ -74,13 +82,13 @@ export default function ProductForm({ product, categories }: any) {
             setData('images', [...(data.images as File[]), ...filesToAdd]);
 
             // อัปเดต UI State
-            const newPreviews = filesToAdd.map(file => ({
+            const newPreviews: ProductImage[] = filesToAdd.map(file => ({
                 id: null,
                 url: URL.createObjectURL(file),
                 is_primary: false,
                 is_new: true
             }));
-            setImages(prev => [...prev, ...newPreviews]);
+            setImages((prev: ProductImage[]) => [...prev, ...newPreviews]);
         }
     };
 
@@ -94,21 +102,27 @@ export default function ProductForm({ product, categories }: any) {
         }
 
         // 2. ลบออกจาก UI State
-        const updatedImages = images.filter((_, i) => i !== index);
+        const updatedImages = images.filter((_: ProductImage, i: number) => i !== index);
         setImages(updatedImages);
 
         // 3. ถ้าเป็นรูปใหม่ (is_new) ต้องลบออกจาก File list ด้วย
         if (itemToRemove.is_new) {
-            const newImagesOnly = images.filter(img => img.is_new);
-            const indexInNewFiles = newImagesOnly.indexOf(itemToRemove);
-
+            // วิธีที่ปลอดภัย: กรองเอาเฉพาะรูปใหม่ที่เหลืออยู่แล้วอัปเดต data.images
+            const remainingNewFiles = images
+                .filter((img: ProductImage, i: number) => img.is_new && i !== index)
+                .map((_, i) => (data.images as File[])[i]);
+            // หมายเหตุ: วิธีการจับคู่ index อาจมีความซับซ้อน แนะนำให้สร้าง logic ที่ผูกกับ object จริงจะแม่นยำกว่า
+            // แต่สำหรับเคสนี้ เพื่อความง่าย ให้ลบโดย filter index ของ files ที่เหลือ
             const currentFiles = [...(data.images as File[])];
+            // ลบไฟล์ใหม่ที่ถูกลบออกจาก UI ออกจาก Array ของ File Object
+            const newImagesOnly = images.filter((img: ProductImage) => img.is_new);
+            const indexInNewFiles = newImagesOnly.indexOf(itemToRemove);
             currentFiles.splice(indexInNewFiles, 1);
             setData('images', currentFiles);
         }
     };
 
-    const submit = (e: React.FormEvent) => {
+    const submit = (e: FormEvent) => {
         e.preventDefault();
         post(product ? route('admin.products.update', product.id) : route('admin.products.store'), {
             forceFormData: true,
@@ -126,7 +140,7 @@ export default function ProductForm({ product, categories }: any) {
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {images.map((img: any, index: number) => (
+                    {images.map((img: ProductImage, index: number) => (
                         <div key={img.id || index} className="group relative aspect-square bg-slate-100 border border-slate-200 rounded-2xl flex items-center justify-center overflow-hidden transition-all hover:shadow-md">
                             <img src={img.url} className="object-cover w-full h-full" alt={`Preview ${index}`} />
 
@@ -139,7 +153,7 @@ export default function ProductForm({ product, categories }: any) {
                             {!img.is_primary && img.id && (
                                 <button
                                     type="button"
-                                    onClick={() => setAsMain(img.id)}
+                                    onClick={() => setAsMain(img.id!)}
                                     className="absolute bottom-2 left-2 bg-black/50 backdrop-blur text-white text-[10px] font-bold px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70 shadow-sm"
                                 >
                                     SET MAIN
@@ -156,7 +170,7 @@ export default function ProductForm({ product, categories }: any) {
                         </div>
                     ))}
 
-                    {/* แสดงปุ่ม Add Image เฉพาะเมื่อรูปไม่ครบ 5 รูป */}
+                    {/* ปุ่ม Add Image แสดงเฉพาะเมื่อรูปน้อยกว่า 5 */}
                     {images.length < 5 && (
                         <label className="relative aspect-square bg-white border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center text-slate-400 hover:border-purple-400 hover:bg-purple-50/50 transition-all cursor-pointer">
                             <ImageIcon className="w-8 h-8 mb-2" />
@@ -171,19 +185,21 @@ export default function ProductForm({ product, categories }: any) {
                         </label>
                     )}
                 </div>
-
-                <div className="w-full mt-4">
-                    {errors.images && <p className="text-red-500 text-xs mt-1">{errors.images}</p>}
-                    {progress && <Progress value={progress.percentage} className="h-1 mt-2" />}
-                </div>
             </div>
 
-            {/* ส่วนของฟอร์มอื่นๆ (ข้อมูลพื้นฐาน, ราคา, ข้อมูลเทคนิค, คำอธิบาย) คงเดิม */}
+            {/* ส่วนข้อมูลอื่นๆ (คงเดิม) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
-                    <div className="flex items-center gap-2 text-slate-800">
-                        <Info className="w-4 h-4 text-blue-600" />
-                        <h3 className="font-bold tracking-tight">ข้อมูลพื้นฐาน</h3>
+                    <div className="flex justify-between gap-2 text-slate-800">
+                        <div className='flex items-center gap-2 text-slate-800'>
+                            <Info className="w-4 h-4 text-blue-600" />
+                            <h3 className="font-bold tracking-tight">ข้อมูลพื้นฐาน</h3>
+                        </div>
+
+                        <div className="flex items-center space-x-2">
+                            <Checkbox id="active" checked={data.is_active} onCheckedChange={(val: boolean) => setData('is_active', val)} />
+                            <Label htmlFor="active" className="text-sm font-medium cursor-pointer">เปิดแสดงผลบนเว็บไซต์</Label>
+                        </div>
                     </div>
 
                     <div className="space-y-2">
@@ -205,20 +221,6 @@ export default function ProductForm({ product, categories }: any) {
                         </div>
                     </div>
 
-                    <div className="space-y-2">
-                        <Label>หมวดหมู่สินค้า</Label>
-                        <Select value={data.category_id} onValueChange={val => setData('category_id', val)}>
-                            <SelectTrigger className="rounded-xl">
-                                <SelectValue placeholder="เลือกหมวดหมู่" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {categories.map((cat: any) => (
-                                    <SelectItem key={cat.id} value={String(cat.id)}>{cat.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        {errors.category_id && <p className="text-red-500 text-xs">{errors.category_id}</p>}
-                    </div>
                 </div>
 
                 <div className="space-y-4">
@@ -239,9 +241,19 @@ export default function ProductForm({ product, categories }: any) {
                     </div>
                     {(errors.price || errors.stock) && <p className="text-red-500 text-xs">ตรวจสอบข้อมูลราคา/สต็อก</p>}
 
-                    <div className="flex items-center space-x-2 pt-4">
-                        <Checkbox id="active" checked={data.is_active} onCheckedChange={(val: boolean) => setData('is_active', val)} />
-                        <Label htmlFor="active" className="text-sm font-medium cursor-pointer">เปิดแสดงผลบนเว็บไซต์</Label>
+                    <div className="space-y-2">
+                        <Label>หมวดหมู่สินค้า</Label>
+                        <Select value={data.category_id} onValueChange={val => setData('category_id', val)}>
+                            <SelectTrigger className="rounded-xl">
+                                <SelectValue placeholder="เลือกหมวดหมู่" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {categories.map((cat: any) => (
+                                    <SelectItem key={cat.id} value={String(cat.id)}>{cat.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        {errors.category_id && <p className="text-red-500 text-xs">{errors.category_id}</p>}
                     </div>
                 </div>
             </div>
