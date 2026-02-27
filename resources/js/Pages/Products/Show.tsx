@@ -24,7 +24,7 @@ export default function Show({ product, relatedProducts }: Props) {
     const [activeImage, setActiveImage] = useState(
         product.images?.find(img => img.is_primary)?.image_path ||
         product.images?.[0]?.image_path ||
-        `https://placehold.co/800x800/FFFFFF/64748B?text=${product.name}`
+        `https://placehold.co/800x800/FFFFFF/64748B?text=Modern Furniture`
     );
 
     const formatPrice = (price: number) => {
