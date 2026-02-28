@@ -37,4 +37,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 });
 
+Route::fallback(fn() => inertia('Errors/NotFound'));
+
 require __DIR__ . '/auth.php';
