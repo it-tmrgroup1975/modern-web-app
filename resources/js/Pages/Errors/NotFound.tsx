@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/Components/ui/card'; //
 import { PageProps } from '@/types';
 
 export default function NotFound() {
-    // ระบุ PageProps โดยไม่ต้องใส่ Generic ซ้ำซ้อน
+    // TypeScript จะรู้จัก categories ทันทีและไม่ฟ้อง Error ขาด auth/ziggy อีกต่อไป
     const { categories } = usePage<PageProps>().props;
 
     const { data, setData, get, processing } = useForm({
