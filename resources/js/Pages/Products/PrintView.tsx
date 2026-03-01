@@ -187,11 +187,13 @@ export default function PrintView({ products }: PrintViewProps) {
             </div>
 
             <div className="fixed top-4 right-4 print:hidden flex gap-2">
-                <Link href="/">
-                    <Button variant="destructive" size="icon" className="rounded-full">
-                        <X className="w-4 h-4" />
-                    </Button>
-                </Link>
+                <Button
+                    onClick={() => window.history.back()}
+                    variant="destructive"
+                    size="icon"
+                    className="rounded-full shadow-lg">
+                    <X className="w-4 h-4" />
+                </Button>
                 <Button className="no-print fixed bottom-10 right-10 shadow-[0_15px_40px_rgba(0,0,0,0.2)] rounded-full px-10 py-7 text-sm font-black bg-slate-900 hover:bg-black text-white border-none transition-all active:scale-95 tracking-[0.15em]" onClick={() => window.print()}>
                     PRINT LABELS
                 </Button>

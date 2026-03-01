@@ -38,8 +38,20 @@ export default function Index({ products: initialProducts, categories, filters }
 
     const handlePrintSelected = () => {
         if (selectedIds.length === 0) return;
-        // ส่งข้อมูลไปยังหน้า Print Labels (ต้องมี Route: products.print-labels รองรับ)
-        router.post(route('products.print-labels'), { ids: selectedIds });
+
+        router.post(route('products.print-labels'),
+            { ids: selectedIds },
+            {
+                // เพิ่ม preserveState เพื่อรักษาค่า Checkbox และ Filter ต่างๆ ไว้
+                preserveState: true,
+                // เพิ่ม preserveScroll เพื่อไม่ให้หน้า Catalog เด้งไปบนสุด
+                preserveScroll: true,
+                onSuccess: () => {
+                    // ตัวเลือกเสริม: หากพิมพ์สำเร็จแล้วต้องการล้างค่าที่เลือกไว้
+                    // setSelectedIds([]);
+                }
+            }
+        );
     };
 
     // อัปเดตข้อมูลเมื่อมีการเปลี่ยนผลลัพธ์จาก Server (Filter/Search)
