@@ -31,8 +31,8 @@ class Search
          */
         // if (mb_strlen($term) < 2) {
             $query->where(function ($q) use ($term) {
-                $q->where('name', 'LIKE', "%{$term}%")
-                    ->orWhere('description', 'LIKE', "%{$term}%");
+                $q->where('products.name', 'LIKE',"%{$term}%")
+                    ->orWhere('products.description','LIKE', "%{$term}%");
             });
             return $next($query);
         // }

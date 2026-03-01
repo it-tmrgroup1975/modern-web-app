@@ -31,10 +31,10 @@ class Category
          */
         $query->where(function ($q) use ($categoryParam) {
             if (is_numeric($categoryParam)) {
-                $q->where('category_id', $categoryParam);
+                $q->where('products.category_id', $categoryParam);
             } else {
                 $q->whereHas('category', fn($subQuery) =>
-                    $subQuery->where('slug', $categoryParam)
+                    $subQuery->where('categories.slug', $categoryParam)
                 );
             }
         });

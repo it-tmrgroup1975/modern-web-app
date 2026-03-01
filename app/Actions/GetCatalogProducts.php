@@ -6,46 +6,51 @@ use App\Models\Product;
 use Illuminate\Pipeline\Pipeline;
 use Illuminate\Pagination\LengthAwarePaginator;
 use App\QueryFilters\{Category, Search};
+use Illuminate\Support\Facades\DB;
 
 class GetCatalogProducts
 {
     /**
      * Execute the action to get filtered and paginated products.
-     * เพิ่มระบบ Priority: สินค้าที่มีรูปภาพจะถูกจัดลำดับขึ้นก่อนเสมอ
-     *
-     * @param bool $onlyActive กำหนดว่าจะกรองเฉพาะสินค้าที่ Active หรือไม่ (Default: true)
+     * * @param bool $onlyActive
      * @return LengthAwarePaginator
      */
     public function execute(bool $onlyActive = true): LengthAwarePaginator
     {
         return app(Pipeline::class)
-            /** * Performance Tip:
-             * 1. with(['category', 'images']) เพื่อแก้ปัญหา N+1
-             * 2. withCount('images') เพื่อใช้ในการจัดลำดับ (Sorting) ที่ระดับ Database
-             */
-            ->send(Product::query()->with(['category', 'images'])->withCount('images'))
+            ->send(
+                Product::query()
+                    ->with(['category', 'images'])
+                    // ใช้ selectRaw และระบุ products.id เพื่อป้องกัน ambiguity
+                    ->selectRaw('products.*, EXISTS(SELECT 1 FROM product_images WHERE product_images.product_id = products.id) as has_images')
+                    // Join category เพื่อใช้เรียงลำดับ Priority
+                    ->join('categories', 'products.category_id', '=', 'categories.id')
+            )
             ->through([
-                // กรองเฉพาะสินค้าที่กำลังวางจำหน่าย (Active)
+                // กรอง Active โดยระบุชื่อตาราง
                 fn($query, $next) => $onlyActive
-                    ? $next($query->where('is_active', true))
+                    ? $next($query->where('products.is_active', true))
                     : $next($query),
 
-                // ตัวกรองขั้นสูงผ่าน Pipeline
                 Category::class,
                 Search::class,
             ])
             ->thenReturn()
-            /** * Core Logic Improvement:
-             * จัดลำดับสินค้าที่มีรูปภาพ (images_count > 0) ขึ้นก่อน
-             * จากนั้นตามด้วยความใหม่ (latest) หากไม่มีการระบุการค้นหา
+            /** * Business Priority Sorting
              */
-            ->orderByRaw('images_count > 0 DESC')
+            ->orderByDesc('has_images')
+            ->orderByRaw("
+                CASE
+                    WHEN categories.name = 'เก้าอี้' THEN 1
+                    WHEN categories.name = 'กล่อง' THEN 2
+                    WHEN categories.name = 'อุปกรณ์เก็บของ' THEN 3
+                    ELSE 4
+                END ASC
+            ")
             ->when(
                 !request()->filled('search'),
-                fn($query) => $query->latest()
+                fn($query) => $query->latest('products.created_at')
             )
-            /** * กำหนดจำนวนรายการต่อหน้า และรักษาค่า Query String ไว้
-             */
             ->paginate(12)
             ->withQueryString();
     }
