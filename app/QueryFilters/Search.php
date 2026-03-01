@@ -29,13 +29,13 @@ class Search
          * 1. หากคำค้นหาสั้น (น้อยกว่า 3 ตัวอักษร) ให้ใช้ LIKE เพื่อความยืดหยุ่น
          * 2. หากคำค้นหายาว ให้ใช้ Full-Text Search เพื่อความเร็วและลำดับความเกี่ยวข้อง
          */
-        if (mb_strlen($term) < 3) {
+        // if (mb_strlen($term) < 2) {
             $query->where(function ($q) use ($term) {
                 $q->where('name', 'LIKE', "%{$term}%")
                     ->orWhere('description', 'LIKE', "%{$term}%");
             });
             return $next($query);
-        }
+        // }
 
         /**
          * ปรับปรุงส่วน Boolean Mode:
@@ -43,10 +43,10 @@ class Search
          * ตัวอย่าง: "ตู้ สีขาว" -> "ตู้* สีขาว*"
          * ช่วยให้ค้นหาได้ทั้ง "ตู้เสื้อผ้า" และ "สีขาวนวล"
          */
-        $booleanTerm = collect(explode(' ', $term))
-            ->filter() // กรองช่องว่างทิ้งกรณีเคาะซ้ำ
-            ->map(fn($word) => $word . '*')
-            ->implode(' ');
+        // $booleanTerm = collect(explode(' ', $term))
+        //     ->filter() // กรองช่องว่างทิ้งกรณีเคาะซ้ำ
+        //     ->map(fn($word) => $word . '*')
+        //     ->implode(' ');
 
         /**
          * การทำ Full-Text Search ในระดับ Advanced:
@@ -54,13 +54,13 @@ class Search
          * - ใช้ whereFullText เพื่อประสิทธิภาพการประมวลผลสูงสุด
          * - จัดลำดับตามความเกี่ยวข้อง (relevance DESC) เพื่อให้ลูกค้าเจอสินค้าที่ตรงใจที่สุด
          */
-        $query->select('*')
-            ->selectRaw(
-                "MATCH(name, description) AGAINST(? IN BOOLEAN MODE) AS relevance",
-                [$booleanTerm]
-            )
-            ->whereFullText(['name', 'description'], $booleanTerm, ['mode' => 'boolean'])
-            ->orderByRaw("relevance DESC");
+        // $query->select('*')
+        //     ->selectRaw(
+        //         "MATCH(name, description) AGAINST(? IN BOOLEAN MODE) AS relevance",
+        //         [$booleanTerm]
+        //     )
+        //     ->whereFullText(['name', 'description'], $booleanTerm, ['mode' => 'boolean'])
+        //     ->orderByRaw("relevance DESC");
 
         return $next($query);
     }

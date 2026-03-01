@@ -38,7 +38,10 @@ export default function Show({ product, relatedProducts }: Props) {
             {/* Top Navigation */}
             <nav className="max-w-7xl mx-auto px-4 py-6">
                 <Link
-                    href={route('products.index')}
+                    href={route('products.index', {
+                        category: product.category?.slug, // ส่ง slug กลับไปเพื่อให้หน้า Index กรองต่อได้ทันที
+                        // หรือส่ง filters เดิมผ่าน props ถ้ามีการส่งมาจากหน้า Index
+                    })}
                     className="inline-flex items-center text-sm font-bold text-slate-500 hover:text-primary transition-colors gap-2"
                 >
                     <ChevronLeft className="w-4 h-4" /> BACK TO CATALOG
