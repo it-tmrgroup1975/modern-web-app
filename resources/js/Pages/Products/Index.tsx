@@ -1,23 +1,35 @@
 // resources/js/Pages/Products/Index.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react'; // เพิ่ม useMemo สำหรับ Stable Sorting
 import { Head, usePage, router } from '@inertiajs/react';
 import { Filter, Printer, CheckSquare, Square } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import CategoryMobileFilter from './Partials/CategoryMobileFilter';
 import CategorySidebar from './Partials/CategorySidebar';
-import ProductCard from './Partials/ProductCard';
 import LoadMoreButton from './Partials/LoadMoreButton';
 import SearchFilter from './Partials/SearchFilter';
 import { ProductsIndexProps } from '@/types';
-import { useDebounce } from '@/Hooks/useDebounce';
 import { Checkbox } from "@/Components/ui/checkbox";
+import ProductCard from './Partials/ProductCard';
 
 export default function Index({ products: initialProducts, categories, filters }: ProductsIndexProps) {
     const { url } = usePage();
     const [allProducts, setAllProducts] = useState(initialProducts.data);
     const [nextPageUrl, setNextPageUrl] = useState<string | null>(initialProducts.next_page_url);
     const [isLoading, setIsLoading] = useState(false);
+
+    // --- ระบบจัดเรียงสินค้า (Image Priority Logic) ---
+    // ใช้ useMemo เพื่อป้องกันการประมวลผลซ้ำโดยไม่จำเป็น และรักษา UI Consistency
+    const sortedProducts = useMemo(() => {
+        return [...allProducts].sort((a, b) => {
+            const aHasImg = (a.images?.length ?? 0) > 0;
+            const bHasImg = (b.images?.length ?? 0) > 0;
+
+            if (aHasImg && !bHasImg) return -1; // a มีรูป, b ไม่มี -> a ขึ้นก่อน
+            if (!aHasImg && bHasImg) return 1;  // a ไม่มีรูป, b มี -> b ขึ้นก่อน
+            return 0; // รักษาลำดับเดิมจาก Backend
+        });
+    }, [allProducts]);
 
     // --- ระบบจัดการการเลือกสินค้า (Print Selection) ---
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -28,26 +40,14 @@ export default function Index({ products: initialProducts, categories, filters }
         );
     };
 
-    const toggleSelectAllInPage = () => {
-        if (selectedIds.length === allProducts.length && allProducts.length > 0) {
-            setSelectedIds([]);
-        } else {
-            setSelectedIds(allProducts.map((p: any) => p.id));
-        }
-    };
-
     const handlePrintSelected = () => {
         if (selectedIds.length === 0) return;
-
         router.post(route('products.print-labels'),
             { ids: selectedIds },
             {
-                // เพิ่ม preserveState เพื่อรักษาค่า Checkbox และ Filter ต่างๆ ไว้
                 preserveState: true,
-                // เพิ่ม preserveScroll เพื่อไม่ให้หน้า Catalog เด้งไปบนสุด
                 preserveScroll: true,
                 onSuccess: () => {
-                    // ตัวเลือกเสริม: หากพิมพ์สำเร็จแล้วต้องการล้างค่าที่เลือกไว้
                     // setSelectedIds([]);
                 }
             }
@@ -76,6 +76,7 @@ export default function Index({ products: initialProducts, categories, filters }
                 only: ['products'],
                 onSuccess: (page) => {
                     const newProducts = page.props.products as any;
+                    // Append ข้อมูลใหม่เข้ากับข้อมูลเดิม
                     setAllProducts([...allProducts, ...newProducts.data]);
                     setNextPageUrl(newProducts.next_page_url);
                     setIsLoading(false);
@@ -96,22 +97,7 @@ export default function Index({ products: initialProducts, categories, filters }
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                        {/* เครื่องมือจัดการ Selection */}
                         <div className="flex items-center gap-2 mr-2">
-                            {/* <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={toggleSelectAllInPage}
-                                className="rounded-xl border-slate-200 text-slate-500 font-bold text-xs uppercase tracking-widest"
-                            >
-                                {selectedIds.length === allProducts.length && allProducts.length > 0 ? (
-                                    <CheckSquare className="w-3 h-3 mr-2" />
-                                ) : (
-                                    <Square className="w-3 h-3 mr-2" />
-                                )}
-                                Select All
-                            </Button> */}
-
                             {selectedIds.length > 0 && (
                                 <Button
                                     onClick={handlePrintSelected}
@@ -123,36 +109,23 @@ export default function Index({ products: initialProducts, categories, filters }
                             )}
                         </div>
 
-                        {/* ส่ง Categories ไปยัง Filter พร้อมระบบป้องกัน Error value เป็นสตริงว่าง */}
-                        <CategoryMobileFilter
-                            categories={categories.filter((c: any) => c.slug)}
-                        />
-
-                        <SearchFilter
-                            initialValue={filters.search || ''}
-                            onSearch={handleSearch}
-                        />
-
+                        <CategoryMobileFilter categories={categories.filter((c: any) => c.slug)} />
+                        <SearchFilter initialValue={filters.search || ''} onSearch={handleSearch} />
                     </div>
                 </header>
 
                 <div className="flex flex-col md:flex-row gap-10">
-                    {/* Sidebar Filters */}
                     <aside className="w-full md:w-72 shrink-0">
                         <div className="md:sticky md:top-24 space-y-8 animate-in fade-in duration-1000">
-                            <CategorySidebar
-                                categories={categories.filter((c: any) => c.slug)}
-                                url={url}
-                            />
+                            <CategorySidebar categories={categories.filter((c: any) => c.slug)} url={url} />
                         </div>
                     </aside>
 
-                    {/* Product Grid */}
                     <main className="flex-1 flex flex-col gap-12">
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                            {allProducts.map((product: any) => (
+                            {/* ใช้ sortedProducts ที่ผ่านลอจิกเรียงลำดับแล้ว */}
+                            {sortedProducts.map((product: any) => (
                                 <div key={product.id} className="relative group transition-all duration-300">
-                                    {/* Selection Checkbox Overlay */}
                                     <div className="absolute top-6 left-6 z-20 transition-transform duration-300 group-hover:scale-110">
                                         <Checkbox
                                             checked={selectedIds.includes(product.id)}
@@ -160,13 +133,11 @@ export default function Index({ products: initialProducts, categories, filters }
                                             className="w-7 h-7 border-2 border-slate-200 bg-white/90 data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600 shadow-xl rounded-xl"
                                         />
                                     </div>
-
                                     <ProductCard product={product} />
                                 </div>
                             ))}
                         </div>
 
-                        {/* Pagination / Load More */}
                         <LoadMoreButton
                             nextPageUrl={nextPageUrl}
                             isLoading={isLoading}
@@ -175,7 +146,6 @@ export default function Index({ products: initialProducts, categories, filters }
                             onLoadMore={handleLoadMore}
                         />
 
-                        {/* Empty State */}
                         {allProducts.length === 0 && (
                             <div className="text-center py-32 bg-white rounded-[3rem] border-2 border-dashed border-slate-100 shadow-sm animate-in fade-in zoom-in-95">
                                 <div className="bg-slate-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">

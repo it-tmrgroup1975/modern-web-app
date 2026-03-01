@@ -11,7 +11,7 @@ class GetCatalogProducts
 {
     /**
      * Execute the action to get filtered and paginated products.
-     * ยกระดับการดึงข้อมูลเพื่อรองรับ Multiple Images และ Industrial Catalog
+     * เพิ่มระบบ Priority: สินค้าที่มีรูปภาพจะถูกจัดลำดับขึ้นก่อนเสมอ
      *
      * @param bool $onlyActive กำหนดว่าจะกรองเฉพาะสินค้าที่ Active หรือไม่ (Default: true)
      * @return LengthAwarePaginator
@@ -19,30 +19,32 @@ class GetCatalogProducts
     public function execute(bool $onlyActive = true): LengthAwarePaginator
     {
         return app(Pipeline::class)
-            /** * Performance Tip: ใช้ with(['category', 'images']) เพื่อโหลดข้อมูลหมวดหมู่และรูปภาพทั้งหมด
-             * ลดปัญหา N+1 Query และรองรับการดึงรูปหลัก (Primary Image) มาแสดงในหน้า Catalog
+            /** * Performance Tip:
+             * 1. with(['category', 'images']) เพื่อแก้ปัญหา N+1
+             * 2. withCount('images') เพื่อใช้ในการจัดลำดับ (Sorting) ที่ระดับ Database
              */
-            ->send(Product::query()->with(['category', 'images']))
+            ->send(Product::query()->with(['category', 'images'])->withCount('images'))
             ->through([
-                // กรองเฉพาะสินค้าที่กำลังวางจำหน่าย (Active) ตามมาตรฐานระบบ Catalog
+                // กรองเฉพาะสินค้าที่กำลังวางจำหน่าย (Active)
                 fn($query, $next) => $onlyActive
                     ? $next($query->where('is_active', true))
                     : $next($query),
 
-                // ตัวกรองขั้นสูงผ่าน Pipeline สำหรับ Enterprise Scalability
+                // ตัวกรองขั้นสูงผ่าน Pipeline
                 Category::class,
                 Search::class,
             ])
             ->thenReturn()
-            /** * จัดเรียงสินค้าล่าสุดเสมอ หากไม่มีการระบุคำค้นหา
-             * เพื่อให้หน้า Catalog แสดงเฟอร์นิเจอร์คอลเลกชันใหม่ก่อน
+            /** * Core Logic Improvement:
+             * จัดลำดับสินค้าที่มีรูปภาพ (images_count > 0) ขึ้นก่อน
+             * จากนั้นตามด้วยความใหม่ (latest) หากไม่มีการระบุการค้นหา
              */
+            ->orderByRaw('images_count > 0 DESC')
             ->when(
                 !request()->filled('search'),
                 fn($query) => $query->latest()
             )
             /** * กำหนดจำนวนรายการต่อหน้า และรักษาค่า Query String ไว้
-             * เพื่อให้ระบบ Pagination ทำงานร่วมกับ Filter และ Search ได้อย่างสมบูรณ์
              */
             ->paginate(12)
             ->withQueryString();

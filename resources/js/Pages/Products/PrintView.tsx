@@ -60,7 +60,7 @@ export default function PrintView({ products }: PrintViewProps) {
                         page-break-after: always;
                         height: 297mm;
                         width: 210mm;
-                        padding: 10mm;
+                        padding: 5mm;
                         display: flex;
                         flex-direction: column;
                         box-sizing: border-box;
@@ -173,7 +173,7 @@ export default function PrintView({ products }: PrintViewProps) {
                             </div>
 
                             {/* Subdued Footer */}
-                            <div className="mt-6 pt-6 border-t-[0.5pt] border-slate-100 flex justify-between items-center">
+                            <div className="pt-6 border-t-[0.5pt] border-slate-100 flex justify-between items-center">
                                 <p className="text-[9px] font-bold text-slate-300 uppercase tracking-[0.3em]">
                                     Genuine Plastic Industrial Grade
                                 </p>
