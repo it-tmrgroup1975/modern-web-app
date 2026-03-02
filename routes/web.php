@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AdminProductController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Actions\ExportProductTemplate;
+use App\Models\Product;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -21,8 +22,30 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::resource('products', AdminProductController::class);
 });
 
+// ปรับจาก Route::redirect('/', '/products'); เป็น:
+Route::get('/', function () {
+    // 1. ดึงสินค้า 4 รายการล่าสุดที่เปิดใช้งานอยู่ (is_active = 1)
+    // 2. ดึงรูปภาพหลัก (is_primary = 1) ของสินค้านั้นๆ มาด้วย
+    $bestSellers = Product::query()
+        ->where('is_active', true)
+        ->with(['images' => function ($query) {
+            // แก้ไข: คอลัมน์ในตาราง product_images คือ is_primary ไม่ใช่ is_active
+            $query->where('is_primary', true);
+        }])
+        ->latest()
+        ->take(4)
+        ->get();
+
+    return Inertia::render('Welcome', [
+        'canLogin' => Route::has('login'),
+        // 'canRegister' => Route::has('register'),
+        'bestSellers' => $bestSellers,
+        'laravelVersion' => \Illuminate\Foundation\Application::VERSION,
+        'phpVersion' => PHP_VERSION,
+    ]);
+})->name('home');
+
 // 2. Public Routes (สินค้าหน้าร้าน)
-Route::redirect('/', '/products');
 Route::resource('products', ProductController::class)->only(['index', 'show']);
 Route::post('/products/print-labels', [ProductController::class, 'printLabels'])->name('products.print-labels');
 

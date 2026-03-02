@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
-import { Button } from '@/Components/ui/button';
 import { Card, CardContent } from '@/Components/ui/card';
 import { Input } from '@/Components/ui/input';
 import { Badge } from '@/Components/ui/badge';
@@ -28,6 +27,7 @@ import {
 import { useDebounce } from '@/Hooks/useDebounce';
 import ProductImportModal from './Partials/ProductImportModal';
 import { toast } from 'sonner';
+import { Button } from '@/Components/ui/button';
 
 export default function Index({ auth, products, categories, filters = {} }: any) {
     const [search, setSearch] = useState(filters?.search ?? '');
