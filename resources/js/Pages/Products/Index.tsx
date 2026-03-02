@@ -97,7 +97,7 @@ export default function Index({ products: initialProducts, categories, filters }
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                        <div className="flex items-center gap-2 mr-2">
+                        {/* <div className="flex items-center gap-2 mr-2">
                             {selectedIds.length > 0 && (
                                 <Button
                                     onClick={handlePrintSelected}
@@ -106,6 +106,25 @@ export default function Index({ products: initialProducts, categories, filters }
                                     <Printer className="w-4 h-4 mr-2" />
                                     พิมพ์ ({selectedIds.length})
                                 </Button>
+                            )}
+                        </div> */}
+                        {/* Floating Action Button (FAB) with Badge */}
+                        <div className="fixed top-8 right-8 z-[100] pointer-events-none">
+                            {selectedIds.length > 0 && (
+                                <div className="relative pointer-events-auto animate-in zoom-in duration-300">
+                                    <Button
+                                        onClick={handlePrintSelected}
+                                        size="icon" // ใช้ size icon เพื่อให้ปุ่มเป็นวงกลม/จัตุรัสพอดีไอคอน
+                                        className="w-14 h-14 bg-purple-900 hover:bg-purple-800 text-white rounded-full shadow-2xl shadow-purple-500/50 border-2 border-white/20 backdrop-blur-md"
+                                    >
+                                        <Printer className="w-6 h-6" />
+                                    </Button>
+
+                                    {/* Badge แสดงตัวเลข */}
+                                    <div className="absolute -top-2 -right-2 flex h-6 min-w-[24px] items-center justify-center rounded-full bg-yellow-500 px-1.5 text-[12px] font-black text-white shadow-lg ring-2 ring-white">
+                                        {selectedIds.length}
+                                    </div>
+                                </div>
                             )}
                         </div>
 
