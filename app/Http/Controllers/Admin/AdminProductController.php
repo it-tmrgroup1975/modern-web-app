@@ -70,7 +70,7 @@ class AdminProductController extends Controller
 
     public function update(Request $request, Product $product)
     {
-        // 1. Validation: รองรับหลายรูปภาพ
+        // 1. Validation: ตรวจสอบข้อมูล
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
@@ -78,57 +78,56 @@ class AdminProductController extends Controller
             'stock' => 'required|integer|min:0',
             'description' => 'required|string',
             'is_active' => 'boolean',
+            'slug' => 'nullable|string',
             'images' => 'nullable|array',
             'images.*' => 'image|mimes:jpeg,png,jpg,webp|max:2048',
+            'deleted_images' => 'nullable|array',
+            'deleted_images.*' => 'exists:product_images,id',
         ]);
-
-        // ลบรูปภาพที่ถูกเลือกให้ลบ (ถ้ามีส่งมา)
-        if ($request->has('deleted_images')) {
-            $imagesToDelete = $product->images()->whereIn('id', $request->deleted_images)->get();
-            foreach ($imagesToDelete as $img) {
-                Storage::disk('public')->delete(str_replace('/storage/', '', $img->image_path));
-                $img->delete();
-            }
-        }
-
-        // บันทึกรูปใหม่ที่อัปโหลด (ถ้ามี)
-        if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $file) {
-                $path = $file->store('products', 'public');
-                $product->images()->create(['image_path' => '/storage/' . $path]);
-            }
-        }
 
         $slug = $request->filled('slug') ? Str::slug($request->slug) : Str::slug($request->name);
 
-        // 2. ใช้ Transaction เพื่อป้องกันข้อมูลพังกรณีอัปเดตล้มเหลว
+        // 2. ใช้ Transaction เพื่อความปลอดภัยของข้อมูล
         \Illuminate\Support\Facades\DB::transaction(function () use ($request, $product, $validated, $slug) {
 
-            // อัปเดตข้อมูลทั่วไป
+            // อัปเดตข้อมูลทั่วไปของสินค้า
             $product->update(array_merge($validated, ['slug' => $slug]));
 
-            // 3. ตรวจสอบว่ามีการอัปโหลดรูปภาพใหม่เข้ามาหรือไม่
-            if ($request->hasFile('images')) {
-                // ลบรูปภาพเก่าทั้งหมดออกจาก Storage และ Database
-                foreach ($product->images as $image) {
-                    $oldPath = str_replace('/storage/', '', $image->image_path);
+            // 3. ลบเฉพาะรูปภาพที่ถูกเลือกให้ลบ (ส่งมาจาก frontend)
+            if ($request->has('deleted_images')) {
+                $imagesToDelete = $product->images()->whereIn('id', $request->deleted_images)->get();
+                foreach ($imagesToDelete as $img) {
+                    // ลบไฟล์จริงออกจาก Storage
+                    $oldPath = str_replace('/storage/', '', $img->image_path);
                     Storage::disk('public')->delete($oldPath);
+                    // ลบข้อมูลออกจาก Database
+                    $img->delete();
                 }
-                $product->images()->delete();
+            }
 
-                // อัปโหลดและบันทึกรูปภาพใหม่
+            // 4. บันทึกรูปใหม่ที่อัปโหลดเพิ่มเข้าไป (โดยไม่ลบรูปเก่าที่เหลืออยู่)
+            if ($request->hasFile('images')) {
+                // นับจำนวนรูปที่มีอยู่แล้วเพื่อกำหนด sort_order ต่อเนื่อง
+                $currentImagesCount = $product->images()->count();
+
                 foreach ($request->file('images') as $index => $file) {
                     $path = $file->store('products', 'public');
                     $product->images()->create([
                         'image_path' => '/storage/' . $path,
-                        'is_primary' => ($index === 0), // รูปแรกเป็นรูปหลัก
-                        'sort_order' => $index + 1
+                        'is_primary' => false, // รูปที่เพิ่มใหม่จะไม่ทับค่ารูปหลักเดิม
+                        'sort_order' => $currentImagesCount + $index + 1
                     ]);
                 }
             }
+
+            // 5. Check: ตรวจสอบว่าสินค้าต้องมีรูปหลักเสมอ
+            // หากรูปหลักเดิมถูกลบไป ให้ตั้งรูปแรกที่เหลืออยู่เป็นรูปหลักแทน
+            if (!$product->images()->where('is_primary', true)->exists()) {
+                $product->images()->first()?->update(['is_primary' => true]);
+            }
         });
 
-        return back()->with('success', 'อัปเดตข้อมูลสินค้าและรูปภาพเรียบร้อยแล้ว');
+        return back()->with('success', 'อัปเดตข้อมูลสินค้าและจัดการรูปภาพเรียบร้อยแล้ว');
     }
 
     public function destroy(Product $product)

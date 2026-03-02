@@ -9,13 +9,25 @@ import { Badge } from '@/Components/ui/badge';
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/Components/ui/select';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/Components/ui/alert-dialog";
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
     Plus, Pencil, Trash2, Search,
-    Filter, Package, Download
+    Filter, Package, Download, AlertTriangle
 } from 'lucide-react';
 import { useDebounce } from '@/Hooks/useDebounce';
 import ProductImportModal from './Partials/ProductImportModal';
+import { toast } from 'sonner';
 
 export default function Index({ auth, products, categories, filters = {} }: any) {
     const [search, setSearch] = useState(filters?.search ?? '');
@@ -35,30 +47,27 @@ export default function Index({ auth, products, categories, filters = {} }: any)
         );
     };
 
-    // ลอจิกสำหรับ Export ข้อมูล
     const handleExport = () => {
+        toast.info('กำลังเตรียมไฟล์ Export...', { description: 'ระบบกำลังประมวลผลข้อมูลสินค้า' });
+
         const queryParams = new URLSearchParams({
             search: search,
             category: filters.category || ''
         });
-        // ส่งไปยัง Route export ที่เรากำหนดไว้
         window.location.href = route('admin.products.export') + '?' + queryParams.toString();
     };
 
-    const handleDelete = (id: number) => {
-
-        // 1. ดึง Query Parameters ทั้งหมดจาก URL ปัจจุบัน (เช่น search, category, page)
+    const confirmDelete = (id: number) => {
         const queryParams = Object.fromEntries(new URLSearchParams(window.location.search));
-        if (confirm('คุณแน่ใจหรือไม่ที่จะลบสินค้านี้? ข้อมูลจะหายไปถาวร')) {
-            router.delete(route('admin.products.destroy', id), {
+
+        router.delete(route('admin.products.destroy', id), {
             forceFormData: true,
-            // 2. เมื่อบันทึกสำเร็จ (onSuccess) ให้ทำการ Redirect กลับไปหน้า Index
-            // พร้อมแนบ Query Parameters เดิมกลับไปด้วย เพื่อรักษา State ของ Filter ไว้
             onSuccess: () => {
+                toast.success('ลบสินค้าเรียบร้อยแล้ว');
                 router.get(route('admin.products.index'), queryParams);
             },
+            onError: () => toast.error('ไม่สามารถลบข้อมูลได้ กรุณาลองใหม่')
         });
-        }
     };
 
     const getProductImageUrl = (product: any) => {
@@ -70,7 +79,7 @@ export default function Index({ auth, products, categories, filters = {} }: any)
     };
 
     return (
-        <AuthenticatedLayout >
+        <AuthenticatedLayout>
             <Head title="คลังสินค้า - Modern Furniture" />
 
             <div className="py-12 px-4 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-700">
@@ -95,7 +104,7 @@ export default function Index({ auth, products, categories, filters = {} }: any)
                             data={{
                                 search: search,
                                 category: filters.category,
-                                page: products.current_page // ถ้ามี Pagination
+                                page: products.current_page
                             }}
                         >
                             <Button className="rounded-2xl bg-purple-900 hover:bg-purple-800 shadow-lg shadow-purple-200">
@@ -156,7 +165,7 @@ export default function Index({ auth, products, categories, filters = {} }: any)
                                         <tr key={product.id} className="group hover:bg-slate-50/30 transition-colors">
                                             <td className="p-6">
                                                 <div className="flex items-center gap-4">
-                                                    <div className="w-12 h-12 rounded-2xl bg-slate-100 flex-shrink-0 overflow-hidden border border-slate-100">
+                                                    <div className="w-20 h-20 rounded-2xl bg-slate-100 flex-shrink-0 overflow-hidden border border-slate-100">
                                                         <img
                                                             src={getProductImageUrl(product)}
                                                             className="w-full h-full object-contain p-1"
@@ -190,27 +199,50 @@ export default function Index({ auth, products, categories, filters = {} }: any)
                                             </td>
                                             <td className="p-6 text-center">
                                                 <div className="flex justify-center gap-2">
-                                                    {/* ปรับปรุง Link โดยส่งข้อมูล filter และ page ปัจจุบันแนบไปด้วย */}
                                                     <Link
                                                         href={route('admin.products.edit', product.id)}
                                                         data={{
                                                             search: search,
                                                             category: filters.category,
-                                                            page: products.current_page // ถ้ามี Pagination
+                                                            page: products.current_page
                                                         }}
                                                     >
                                                         <Button variant="ghost" size="icon" className="rounded-xl hover:bg-blue-50 hover:text-blue-600 transition-all">
                                                             <Pencil className="w-4 h-4" />
                                                         </Button>
                                                     </Link>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() => handleDelete(product.id)}
-                                                        className="rounded-xl hover:bg-red-50 hover:text-red-600 transition-all"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </Button>
+
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="rounded-xl hover:bg-red-50 hover:text-red-600 transition-all"
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </Button>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent className="rounded-[2rem] border-none shadow-2xl">
+                                                            <AlertDialogHeader>
+                                                                <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center mb-2">
+                                                                    <AlertTriangle className="text-red-500 w-6 h-6" />
+                                                                </div>
+                                                                <AlertDialogTitle className="text-xl font-black">คุณแน่ใจหรือไม่ที่จะลบ?</AlertDialogTitle>
+                                                                <AlertDialogDescription className="text-slate-500">
+                                                                    การดำเนินการนี้ไม่สามารถย้อนกลับได้ สินค้า <span className="font-bold text-slate-900 italic">"{product.name}"</span> จะถูกลบออกจากฐานข้อมูลและไฟล์รูปภาพทั้งหมดจะหายไป
+                                                                </AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooter className="gap-2">
+                                                                <AlertDialogCancel className="rounded-xl border-slate-100 hover:bg-slate-50">ยกเลิก</AlertDialogCancel>
+                                                                <AlertDialogAction
+                                                                    onClick={() => confirmDelete(product.id)}
+                                                                    className="rounded-xl bg-red-600 hover:bg-red-700 font-bold"
+                                                                >
+                                                                    ยืนยันการลบ
+                                                                </AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
                                                 </div>
                                             </td>
                                         </tr>

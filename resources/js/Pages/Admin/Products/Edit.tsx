@@ -6,10 +6,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
 import { Button } from '@/Components/ui/button';
 import { ChevronLeft } from 'lucide-react';
 import ProductForm from './Partials/ProductForm';
+import { useEffect } from 'react';
+import { toast } from 'sonner';
 
 export default function Edit({ auth, product, categories }: any) {
     // ดึง query parameters ปัจจุบันจาก URL (ถ้ามี)
     const queryParams = new URLSearchParams(window.location.search);
+
+    useEffect(() => {
+        toast.info(`กำลังเข้าสู่โหมดแก้ไข: ${product.name}`, { duration: 2000 });
+    }, []);
 
     return (
         <AuthenticatedLayout

@@ -22,6 +22,7 @@ interface ProductImage {
     is_primary: boolean;
     is_new: boolean;
 }
+import { toast } from 'sonner'; // เพิ่มการ Import
 
 export default function ProductForm({ product, categories }: any) {
     const [images, setImages] = useState<ProductImage[]>(
@@ -123,6 +124,11 @@ export default function ProductForm({ product, categories }: any) {
             // พร้อมแนบ Query Parameters เดิมกลับไปด้วย เพื่อรักษา State ของ Filter ไว้
             onSuccess: () => {
                 router.get(route('admin.products.index'), queryParams);
+            },
+            onError: (errors) => {
+                toast.error('บันทึกไม่สำเร็จ', {
+                    description: 'กรุณาตรวจสอบความถูกต้องของข้อมูลในช่องที่มีสีแดง'
+                });
             },
         });
     };
