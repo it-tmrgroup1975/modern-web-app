@@ -46,8 +46,18 @@ export default function Index({ auth, products, categories, filters = {} }: any)
     };
 
     const handleDelete = (id: number) => {
+
+        // 1. ดึง Query Parameters ทั้งหมดจาก URL ปัจจุบัน (เช่น search, category, page)
+        const queryParams = Object.fromEntries(new URLSearchParams(window.location.search));
         if (confirm('คุณแน่ใจหรือไม่ที่จะลบสินค้านี้? ข้อมูลจะหายไปถาวร')) {
-            router.delete(route('admin.products.destroy', id));
+            router.delete(route('admin.products.destroy', id), {
+            forceFormData: true,
+            // 2. เมื่อบันทึกสำเร็จ (onSuccess) ให้ทำการ Redirect กลับไปหน้า Index
+            // พร้อมแนบ Query Parameters เดิมกลับไปด้วย เพื่อรักษา State ของ Filter ไว้
+            onSuccess: () => {
+                router.get(route('admin.products.index'), queryParams);
+            },
+        });
         }
     };
 
@@ -80,7 +90,14 @@ export default function Index({ auth, products, categories, filters = {} }: any)
 
                         <ProductImportModal />
 
-                        <Link href={route('admin.products.create')}>
+                        <Link
+                            href={route('admin.products.create')}
+                            data={{
+                                search: search,
+                                category: filters.category,
+                                page: products.current_page // ถ้ามี Pagination
+                            }}
+                        >
                             <Button className="rounded-2xl bg-purple-900 hover:bg-purple-800 shadow-lg shadow-purple-200">
                                 <Plus className="w-4 h-4 mr-2" /> New Product
                             </Button>
@@ -173,7 +190,15 @@ export default function Index({ auth, products, categories, filters = {} }: any)
                                             </td>
                                             <td className="p-6 text-center">
                                                 <div className="flex justify-center gap-2">
-                                                    <Link href={route('admin.products.edit', product.id)}>
+                                                    {/* ปรับปรุง Link โดยส่งข้อมูล filter และ page ปัจจุบันแนบไปด้วย */}
+                                                    <Link
+                                                        href={route('admin.products.edit', product.id)}
+                                                        data={{
+                                                            search: search,
+                                                            category: filters.category,
+                                                            page: products.current_page // ถ้ามี Pagination
+                                                        }}
+                                                    >
                                                         <Button variant="ghost" size="icon" className="rounded-xl hover:bg-blue-50 hover:text-blue-600 transition-all">
                                                             <Pencil className="w-4 h-4" />
                                                         </Button>

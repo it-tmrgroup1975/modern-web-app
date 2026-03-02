@@ -103,11 +103,27 @@ export default function ProductForm({ product, categories }: any) {
         }
     };
 
+    // const submit = (e: FormEvent) => {
+    //     e.preventDefault();
+    //     post(product ? route('admin.products.update', product.id) : route('admin.products.store'), {
+    //         forceFormData: true,
+    //         preserveState: true,
+    //     });
+    // };
+
     const submit = (e: FormEvent) => {
         e.preventDefault();
+
+        // 1. ดึง Query Parameters ทั้งหมดจาก URL ปัจจุบัน (เช่น search, category, page)
+        const queryParams = Object.fromEntries(new URLSearchParams(window.location.search));
+
         post(product ? route('admin.products.update', product.id) : route('admin.products.store'), {
             forceFormData: true,
-            preserveState: true,
+            // 2. เมื่อบันทึกสำเร็จ (onSuccess) ให้ทำการ Redirect กลับไปหน้า Index
+            // พร้อมแนบ Query Parameters เดิมกลับไปด้วย เพื่อรักษา State ของ Filter ไว้
+            onSuccess: () => {
+                router.get(route('admin.products.index'), queryParams);
+            },
         });
     };
 
